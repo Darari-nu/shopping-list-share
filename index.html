@@ -24,6 +24,7 @@
  * - v5.1 (2025-10-04): アイテム追加アニメーションを新規追加時のみに修正（ポーリング再描画時に動かないように）
  * - v5.2 (2025-10-04): スマホ1画面最適化（アイテムの高さ圧縮、入力欄折りたたみ式、日付を右上配置、ヘッダー縮小、極小デバイス対応）
  * - v5.3 (2025-10-04): UIブラッシュアップ（全ボタンにグラデーション適用、アーカイブのトグル開閉機能追加）
+ * - v6.0 (2025-10-04): デザイン刷新（Apple風ミニマル、ダークモード対応、モーション設計、WCAG AA準拠、SVGアイコン、PWA対応）
  *
  * 技術スタック:
  * - Vanilla JavaScript（フレームワークなし）
@@ -35,71 +36,81 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#007aff" />
 <title>夫婦共有 買い物リスト</title>
+<link rel="manifest" href="/manifest.webmanifest" />
 <style>
   /* ============================================================
-   * カラーパレット（Apple + 21st.dev風）
+   * カラーパレット（Apple風ミニマル + ダークモード）
    * ============================================================ */
   :root {
-    /* Apple風のカラー */
-    --bg-gradient-from: #f5f7fa;
-    --bg-gradient-to: #c3cfe2;
-    --card-bg: rgba(255, 255, 255, 0.85);
-    --card-border: rgba(255, 255, 255, 0.3);
+    /* ライトモード */
+    --bg-from: #f8fafc;
+    --bg-to: #e2e8f0;
+    --card-bg: rgba(255, 255, 255, 0.9);
+    --card-border: rgba(226, 232, 240, 0.8);
 
-    /* テキスト */
-    --text-primary: #1d1d1f;
-    --text-secondary: #86868b;
-    --text-tertiary: #a1a1a6;
+    --text-primary: #0f172a;
+    --text-secondary: #64748b;
+    --text-tertiary: #94a3b8;
 
-    /* アクセントカラー（Apple Blue） */
     --accent: #007aff;
     --accent-hover: #0051d5;
-    --accent-light: rgba(0, 122, 255, 0.1);
+    --accent-light: rgba(0, 122, 255, 0.15);
 
-    /* システムカラー */
-    --success: #34c759;
-    --danger: #ff3b30;
-    --warning: #ff9500;
+    --line: rgba(226, 232, 240, 0.8);
+    --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    --shadow-lg: 0 20px 60px rgba(15, 23, 42, 0.12);
+  }
 
-    /* ライン・シャドウ */
-    --line: rgba(0, 0, 0, 0.06);
-    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
-    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
-    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-from: #0f172a;
+      --bg-to: #1e293b;
+      --card-bg: rgba(30, 41, 59, 0.9);
+      --card-border: rgba(51, 65, 85, 0.8);
+
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-tertiary: #64748b;
+
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --accent-light: rgba(59, 130, 246, 0.2);
+
+      --line: rgba(51, 65, 85, 0.8);
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
   }
 
   /* ============================================================
-   * ベーススタイル
+   * リセット & ベース
    * ============================================================ */
   * {
-    box-sizing: border-box;
     margin: 0;
     padding: 0;
+    box-sizing: border-box;
   }
 
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
-    background: linear-gradient(135deg, var(--bg-gradient-from) 0%, var(--bg-gradient-to) 100%);
-    background-attachment: fixed;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    line-height: 1.45;
     color: var(--text-primary);
-    line-height: 1.5;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    background: linear-gradient(135deg, var(--bg-from) 0%, var(--bg-to) 100%);
+    min-height: 100vh;
     position: relative;
   }
 
-  /* ノイズグラデーション（軽量版：CSSのみ） */
+  /* 超薄ノイズ */
   body::before {
     content: '';
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0.03;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    opacity: 0.02;
     z-index: -1;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' /%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     pointer-events: none;
   }
 
@@ -118,14 +129,13 @@
     -webkit-backdrop-filter: blur(20px) saturate(180%);
     border: 1px solid var(--card-border);
     border-radius: 20px;
-    box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+    box-shadow: var(--shadow);
     overflow: hidden;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: box-shadow 0.3s ease;
   }
 
   .card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+    box-shadow: var(--shadow-lg);
   }
 
   .pad {
@@ -142,17 +152,17 @@
     margin: 0 0 8px 0;
   }
 
+  .muted {
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+  }
+
   @media (max-width: 768px) {
     h1 {
       font-size: 20px;
       margin: 0;
     }
-  }
-
-  .muted {
-    color: var(--text-secondary);
-    font-size: 13px;
-    font-weight: 500;
   }
 
   /* ============================================================
@@ -168,6 +178,12 @@
     border-bottom: 1px solid var(--line);
   }
 
+  @media (prefers-color-scheme: dark) {
+    .statusBar {
+      background: rgba(30, 41, 59, 0.5);
+    }
+  }
+
   .statusBar strong {
     font-size: 17px;
     font-weight: 600;
@@ -178,7 +194,6 @@
     .statusBar {
       padding: 10px 16px;
     }
-
     .statusBar strong {
       font-size: 15px;
     }
@@ -195,12 +210,15 @@
   }
 
   .addToggleBtn {
-    display: none; /* デスクトップでは非表示 */
+    display: none;
   }
 
   @media (max-width: 768px) {
     .addToggleBtn {
-      display: block;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
       width: 100%;
       padding: 14px;
       font-size: 16px;
@@ -224,15 +242,23 @@
     }
   }
 
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+  }
+
   input[type=text],
   input[type=password] {
     flex: 1;
     font-size: 17px;
     font-weight: 400;
     padding: 14px 16px;
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--line);
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.9);
+    background: var(--card-bg);
     color: var(--text-primary);
     transition: all 0.2s ease;
   }
@@ -240,21 +266,24 @@
   input[type=text]::placeholder,
   input[type=password]::placeholder {
     color: var(--text-tertiary);
+    font-size: 15px;
   }
 
   input[type=text]:focus,
   input[type=password]:focus {
     outline: none;
     border-color: var(--accent);
-    background: #fff;
     box-shadow: 0 0 0 4px var(--accent-light);
-    transform: translateY(-1px);
   }
 
   /* ============================================================
-   * ボタン（Apple風）
+   * ボタン（Apple風 + SVGアイコン）
    * ============================================================ */
   .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
     padding: 12px 20px;
     font-size: 15px;
     font-weight: 600;
@@ -268,14 +297,27 @@
     letter-spacing: -0.2px;
   }
 
+  @media (prefers-color-scheme: dark) {
+    .btn {
+      background: linear-gradient(135deg, rgba(51, 65, 85, 0.95) 0%, rgba(71, 85, 105, 0.95) 100%);
+      color: var(--text-primary);
+    }
+  }
+
   .btn:hover {
     background: linear-gradient(135deg, #fff 0%, #f5f5fa 100%);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
     transform: translateY(-2px);
   }
 
+  @media (prefers-color-scheme: dark) {
+    .btn:hover {
+      background: linear-gradient(135deg, rgba(71, 85, 105, 0.95) 0%, rgba(100, 116, 139, 0.95) 100%);
+    }
+  }
+
   .btn:active {
-    transform: translateY(0);
+    transform: scale(0.98);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
   }
 
@@ -301,6 +343,11 @@
     transform: none !important;
   }
 
+  .btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
   /* ============================================================
    * アイテムリスト
    * ============================================================ */
@@ -315,7 +362,15 @@
     align-items: center;
     padding: 16px 20px;
     border-top: 1px solid var(--line);
-    transition: background 0.2s ease;
+    transition: opacity 0.18s ease, transform 0.18s ease, background 0.2s ease;
+  }
+
+  .item:first-child {
+    border-top: none;
+  }
+
+  .item:hover {
+    background: var(--accent-light);
   }
 
   /* 新規追加アイテムのみアニメーション */
@@ -334,6 +389,21 @@
     }
   }
 
+  /* prefers-reduced-motion対応 */
+  @media (prefers-reduced-motion: reduce) {
+    .item {
+      transition: none;
+    }
+    .item.item-new {
+      animation: none;
+    }
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
   .item-content {
     display: flex;
     flex-direction: row;
@@ -349,15 +419,7 @@
     flex: 1;
   }
 
-  .item:first-child {
-    border-top: none;
-  }
-
-  .item:hover {
-    background: rgba(0, 122, 255, 0.03);
-  }
-
-  /* カスタムチェックボックス（Apple風 + アニメーション） */
+  /* カスタムチェックボックス */
   .item input[type=checkbox] {
     width: 24px;
     height: 24px;
@@ -427,7 +489,7 @@
     }
   }
 
-  /* 空状態のデザイン */
+  /* 空状態 */
   .empty-state {
     text-align: center;
     padding: 60px 20px;
@@ -457,22 +519,21 @@
     padding: 8px 12px;
     font-size: 15px;
     text-align: center;
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--line);
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.6);
+    background: var(--card-bg);
+    color: var(--text-primary);
     transition: all 0.2s ease;
   }
 
   .qtyInput:focus {
     outline: none;
     border-color: var(--accent);
-    background: #fff;
     box-shadow: 0 0 0 3px var(--accent-light);
   }
 
-
   /* ============================================================
-   * フローティングアクションボタン
+   * FAB
    * ============================================================ */
   .fab {
     position: fixed;
@@ -496,7 +557,7 @@
     position: fixed;
     bottom: 24px;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(-50%) translateY(0);
     background: rgba(29, 29, 31, 0.95);
     backdrop-filter: blur(20px);
     color: #fff;
@@ -507,6 +568,13 @@
     font-weight: 500;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
     letter-spacing: -0.2px;
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  .snack.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-10px);
   }
 
   /* ============================================================
@@ -518,16 +586,48 @@
   }
 
   /* ============================================================
-   * レスポンシブ（モバイルファースト）
+   * アーカイブパネル
+   * ============================================================ */
+  .archive-header {
+    padding: 12px 16px;
+    background: rgba(248, 250, 252, 0.8);
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .archive-header {
+      background: rgba(30, 41, 59, 0.8);
+    }
+  }
+
+  .archive-header strong {
+    font-size: 14px;
+  }
+
+  .archive-header .btn {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+
+  #archiveList {
+    border-top: 1px solid var(--line);
+  }
+
+  /* ============================================================
+   * レスポンシブ
    * ============================================================ */
   @media (max-width: 768px) {
-    /* ラッパー */
     .wrap {
       padding: 12px;
-      padding-bottom: 100px; /* FABと干渉しないように */
+      padding-bottom: 100px;
     }
 
-    /* カード */
     .card {
       border-radius: 16px;
     }
@@ -536,7 +636,6 @@
       padding: 16px;
     }
 
-    /* ステータスバー */
     .statusBar {
       padding: 14px 16px;
       flex-wrap: wrap;
@@ -552,7 +651,6 @@
       font-size: 12px;
     }
 
-    /* 入力エリア */
     .inputRow {
       flex-direction: column;
       gap: 10px;
@@ -561,7 +659,7 @@
     input[type=text],
     input[type=password] {
       width: 100%;
-      font-size: 16px; /* iOSのズーム防止 */
+      font-size: 16px;
       padding: 14px 16px;
     }
 
@@ -571,7 +669,6 @@
       font-size: 16px;
     }
 
-    /* アーカイブ情報 */
     #archInfo {
       flex-direction: column;
       align-items: flex-start !important;
@@ -584,19 +681,17 @@
       font-size: 14px !important;
     }
 
-    /* アイテムリスト */
     .item {
       grid-template-columns: 32px 1fr;
       padding: 10px 12px;
       gap: 10px;
-      min-height: 52px; /* コンパクトに */
+      min-height: 52px;
     }
 
     .item:active {
-      background: rgba(0, 122, 255, 0.05);
+      background: var(--accent-light);
     }
 
-    /* チェックボックス（タップターゲット拡大） */
     .item input[type=checkbox] {
       width: 28px;
       height: 28px;
@@ -607,7 +702,6 @@
       font-size: 16px;
     }
 
-    /* 名前・日時 */
     .item-content {
       gap: 4px;
     }
@@ -621,12 +715,10 @@
       line-height: 1.3;
     }
 
-    /* 数量入力（スマホでは非表示） */
     .qtyInput {
       display: none;
     }
 
-    /* 数量がある場合は名前の横に表示 */
     .name.has-qty::after {
       content: attr(data-qty);
       display: inline-block;
@@ -642,8 +734,6 @@
       box-shadow: 0 2px 4px rgba(0, 122, 255, 0.1);
     }
 
-
-    /* FAB（固定ボタン） */
     .fab {
       right: 16px;
       bottom: 16px;
@@ -660,14 +750,12 @@
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
     }
 
-    /* スナックバー */
     .snack {
-      bottom: 90px; /* FABと重ならないように */
+      bottom: 90px;
       max-width: calc(100% - 32px);
       font-size: 14px;
     }
 
-    /* ログイン画面 */
     .login {
       margin: 40px auto;
       padding: 0 16px;
@@ -682,7 +770,7 @@
     }
 
     .login input[type=password] {
-      font-size: 16px; /* iOSのズーム防止 */
+      font-size: 16px;
     }
 
     .login .btn {
@@ -691,32 +779,6 @@
     }
   }
 
-  /* アーカイブセクション折りたたみ */
-  @media (max-width: 768px) {
-    #archiveList {
-      border-top: 1px solid var(--line);
-    }
-
-    #archiveList .archive-header {
-      padding: 10px 16px;
-      background: rgba(0, 122, 255, 0.03);
-      border-bottom: 1px solid var(--line);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    #archiveList .archive-header strong {
-      font-size: 14px;
-    }
-
-    #archiveList .archive-header .btn {
-      font-size: 12px;
-      padding: 6px 12px;
-    }
-  }
-
-  /* 極小デバイス（iPhone SE等） */
   @media (max-width: 375px) {
     .item {
       padding: 8px 10px;
@@ -736,9 +798,15 @@
     <div id="loginScreen" class="login">
       <div class="card pad">
         <h1>買い物リスト</h1>
-        <div class="inputRow">
-          <input type="password" id="passwordInput" placeholder="パスワードを入力">
-          <button class="btn primary" id="loginBtn">ログイン</button>
+        <div style="margin-top: 16px;">
+          <label for="passwordInput">パスワード</label>
+          <div class="inputRow">
+            <input type="password" id="passwordInput" placeholder="パスワードを入力" aria-label="パスワード">
+            <button class="btn primary" id="loginBtn" aria-label="ログイン">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3"/></svg>
+              ログイン
+            </button>
+          </div>
         </div>
         <div id="loginError" class="muted" style="color:#d00;margin-top:8px;display:none;"></div>
       </div>
@@ -752,32 +820,48 @@
           <div class="muted" id="status">同期OK</div>
         </div>
         <div class="pad">
-          <button class="addToggleBtn" id="addToggleBtn">+ 追加する</button>
+          <button class="addToggleBtn" id="addToggleBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            追加する
+          </button>
           <div class="inputRow" id="inputRow">
-            <input id="name" type="text" placeholder="買いたいもの（例：牛乳）" />
-            <input id="qty" type="text" placeholder="数量(任意)" style="max-width:160px" />
-            <button class="btn primary" id="addBtn">追加</button>
+            <div style="flex: 1;">
+              <label for="name">アイテム名</label>
+              <input id="name" type="text" placeholder="買いたいもの（例：牛乳）" aria-label="アイテム名" />
+            </div>
+            <div style="max-width: 160px;">
+              <label for="qty">数量（任意）</label>
+              <input id="qty" type="text" placeholder="数量" aria-label="数量" />
+            </div>
+            <button class="btn primary" id="addBtn" aria-label="追加" style="margin-top: 20px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+              追加
+            </button>
           </div>
           <div class="muted" id="archInfo" style="margin-top:8px;display:flex;justify-content:space-between;align-items:center">
             <span id="archCount"></span>
-            <button class="btn" id="archiveBtn" style="font-size:12px;padding:6px 12px">アーカイブを見る</button>
+            <button class="btn" id="archiveBtn" style="font-size:12px;padding:6px 12px" aria-label="アーカイブを見る">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
+              アーカイブを見る
+            </button>
           </div>
         </div>
         <div class="list" id="list"></div>
-        <div class="list" id="archiveList" style="display:none;margin-top:16px">
-          <div class="archive-header" style="padding:12px 16px;background:#f9f9f9;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center">
-            <strong>アーカイブ</strong>
-            <button class="btn" id="closeArchiveBtn" style="font-size:12px;padding:6px 12px">閉じる</button>
-          </div>
-        </div>
+        <div class="list" id="archiveList" style="display:none;margin-top:16px"></div>
       </div>
     </div>
   </div>
 
-  <!-- 常設 Undo & 更新 -->
+  <!-- FAB -->
   <div class="fab">
-    <button class="btn" id="undoBtn" disabled>元に戻す</button>
-    <button class="btn" id="refreshBtn">更新</button>
+    <button class="btn" id="undoBtn" disabled aria-label="元に戻す">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 14l-4-4 4-4"/><path d="M20 20a8 8 0 0 0-8-8H5"/></svg>
+      元に戻す
+    </button>
+    <button class="btn" id="refreshBtn" aria-label="更新">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+      更新
+    </button>
   </div>
 
   <div class="snack" id="snack"></div>
@@ -799,13 +883,6 @@ const POLL_MS   = 1000;
 
 /**
  * アプリケーション状態
- * - password: 認証パスワード（LocalStorageから復元）
- * - lastSnapshot: 最後に取得したデータ（未完了アイテム＋アーカイブ）
- * - undoStack: Undo履歴（toggle/delete/add操作）
- * - pollTimer: ポーリングタイマーID
- * - pendingAdds: 保存中のtempID（楽観的UI更新のチラツキ防止）
- * - pendingCompletes: 完了処理中のitemID（楽観的UI更新のチラツキ防止）
- * - newItemIds: 新規追加したアイテムのID（アニメーション用）
  */
 let password = null;
 let lastSnapshot = { items: [], archived: [] };
@@ -819,113 +896,81 @@ let newItemIds = new Set();
 // ユーティリティ関数
 // ============================================================
 
-/**
- * トースト通知を表示
- * @param {string} msg - 表示メッセージ
- */
-function toast(msg){ const el=document.getElementById('snack'); el.textContent=msg; el.style.display='block'; setTimeout(()=>el.style.display='none',3000); }
-
-/**
- * ステータスバーのテキストを更新
- * @param {string} s - ステータステキスト
- */
-function setStatus(s){ document.getElementById('status').textContent=s; }
-
-/**
- * Undoボタンの有効/無効を切り替え
- */
-function setUndoEnabled(){ document.getElementById('undoBtn').disabled = undoStack.length===0; }
-
-/**
- * 安全なJSON.parse（エラー時にok:falseオブジェクトを返す）
- * @param {string} t - JSONテキスト
- * @return {Object} パース結果またはエラーオブジェクト
- */
-function safeJSON(t){ try{ return JSON.parse(t) } catch(e){ return { ok:false, error:'ParseError', raw:t }}}
-
-// ============================================================
-// API通信（GAS WebApp）
-// ============================================================
-
-/**
- * GETリクエスト（読み取り専用操作）
- * @param {string} action - アクション名（'list' など）
- * @param {Object} params - クエリパラメータ
- * @return {Promise<Object>} APIレスポンス
- */
-function apiGet(action, params={}) {
-  const q = new URLSearchParams({ action, household: HOUSEHOLD, ...params });
-  return fetch(`${GAS_URL}?${q.toString()}`).then(r=>r.text()).then(safeJSON);
+function toast(msg){
+  const el = document.getElementById('snack');
+  el.textContent = msg;
+  el.style.display = 'block';
+  el.classList.add('show');
+  setTimeout(()=>{
+    el.classList.remove('show');
+    setTimeout(()=>el.style.display='none', 300);
+  }, 3000);
 }
 
-/**
- * POSTリクエスト（書き込み操作）
- * @param {string} action - アクション名（'add', 'toggle', 'delete', 'update'）
- * @param {Object} body - リクエストボディ
- * @return {Promise<Object>} APIレスポンス
- *
- * 注意: Content-Typeヘッダーは送らない（CORS preflight回避のため）
- */
-function apiPost(action, body={}) {
+function setStatus(msg){ document.getElementById('status').textContent = msg; }
+
+function escapeHtml(s){ return s.replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+function setUndoEnabled(){ document.getElementById('undoBtn').disabled = undoStack.length === 0; }
+
+// ============================================================
+// API通信（重要: Content-Typeヘッダは付けない）
+// ============================================================
+
+function apiGet(action, params={}){
+  const qs = new URLSearchParams({ action, household: HOUSEHOLD, ...params }).toString();
+  return fetch(`${GAS_URL}?${qs}`).then(r=>r.text()).then(safeJSON);
+}
+
+function apiPost(action, body={}){
   return fetch(GAS_URL, {
     method: 'POST',
     body: JSON.stringify({ action, household: HOUSEHOLD, password, ...body })
   }).then(r=>r.text()).then(safeJSON);
 }
 
+function safeJSON(text){ try{ return JSON.parse(text); }catch{ return null; } }
+
 // ============================================================
 // 認証
 // ============================================================
 
-/**
- * ログイン処理（パスワード認証）
- * - LocalStorageにパスワードを保存
- * - ログイン画面を非表示にしてアプリ起動
- */
-function login(){
-  const val = document.getElementById('passwordInput').value.trim();
-  if(!val){ const e=document.getElementById('loginError'); e.textContent='パスワードを入力してください'; e.style.display='block'; return; }
-  password = val; localStorage.setItem('password', password);
-  document.getElementById('loginScreen').style.display='none';
-  document.getElementById('app').style.display='block';
-  boot();
+async function login(){
+  const pw = document.getElementById('passwordInput').value.trim();
+  if(!pw) return;
+
+  const res = await apiPost('add', { name: '__test__', qty: '', password: pw });
+  if(res && res.ok){
+    password = pw;
+    localStorage.setItem('password', pw);
+    await apiPost('delete', { itemId: res.itemId });
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('app').style.display='block';
+    boot();
+  } else {
+    document.getElementById('loginError').textContent = '認証に失敗しました';
+    document.getElementById('loginError').style.display = 'block';
+  }
 }
 
-// ============================================================
-// アプリケーション起動・データ同期
-// ============================================================
-
-/**
- * アプリ起動処理
- * - 初回データ読み込み
- * - 1秒ごとのポーリング開始
- */
 function boot(){
   load(true);
   clearInterval(pollTimer);
   pollTimer = setInterval(()=>load(false), POLL_MS);
 }
 
-/**
- * データ読み込み（ポーリング）
- * @param {boolean} first - 初回読み込みかどうか
- *
- * 仕組み:
- * - サーバーから最新データを取得
- * - 保存中のアイテム（pendingAdds）は保持して消えないようにする
- * - 取得成功時はLocalStorageにキャッシュ
- * - 取得失敗時はキャッシュから復元
- */
+// ============================================================
+// データ読み込み
+// ============================================================
+
 async function load(first=false){
   const res = await apiGet('list');
   if(res && res.ok){
-    // 保存中/完了処理中の楽観的アイテムを保持
     const pending = lastSnapshot.items.filter(x =>
       pendingAdds.has(x.itemId) ||
       pendingCompletes.has(x.itemId)
     );
 
-    // サーバーから取得したアイテムから、処理中のものを除外
     const serverItems = (res.items || []).filter(x =>
       !pendingCompletes.has(x.itemId)
     );
@@ -946,16 +991,10 @@ async function load(first=false){
 // UI描画
 // ============================================================
 
-/**
- * 買い物リストを画面に描画
- * - lastSnapshot.itemsから未完了アイテムを表示
- * - チェックボックス、数量入力、削除ボタンを配置
- */
 function render(){
   const list = document.getElementById('list');
   list.innerHTML = '';
 
-  // 空状態の表示
   if(lastSnapshot.items.length === 0){
     list.innerHTML = `
       <div class="empty-state">
@@ -971,22 +1010,18 @@ function render(){
   lastSnapshot.items.forEach(item=>{
     const row = document.createElement('div'); row.className='item';
 
-    // 新規追加アイテムの場合のみアニメーション
     if(newItemIds.has(item.itemId)){
       row.classList.add('item-new');
-      // アニメーション終了後にクラスを削除
       setTimeout(()=> newItemIds.delete(item.itemId), 400);
     }
 
-    // チェック
     const cb = document.createElement('input'); cb.type='checkbox';
+    cb.setAttribute('aria-label', `${item.name}を完了`);
     cb.addEventListener('change', ()=>complete(item));
 
-    // 名前 + 日時
     const content = document.createElement('div'); content.className='item-content';
     const main = document.createElement('div'); main.className='item-main';
     const name = document.createElement('div'); name.className='name'; name.textContent = item.name;
-    // スマホ表示用：数量がある場合はバッジとして表示
     if(item.qty){
       name.classList.add('has-qty');
       name.setAttribute('data-qty', item.qty);
@@ -996,64 +1031,69 @@ function render(){
     content.appendChild(main);
     content.appendChild(date);
 
-    // 数量（一覧で編集）
     const qty = document.createElement('input'); qty.type='text'; qty.className='qtyInput';
     qty.value = item.qty || ''; qty.placeholder = '数量';
+    qty.setAttribute('aria-label', `${item.name}の数量`);
     qty.addEventListener('input', ()=>{
-      // 入力中は即座にUIへ反映、保存はデバウンス
       scheduleQtySave(item, qty.value.trim());
     });
 
-    row.appendChild(cb); row.appendChild(content); row.appendChild(qty);
+    row.appendChild(cb);
+    row.appendChild(content);
+    row.appendChild(qty);
+
     list.appendChild(row);
   });
+
   setUndoEnabled();
 }
 
 // ============================================================
-// CRUD操作（楽観的UI更新）
+// アイテム操作
 // ============================================================
 
-/**
- * アイテム追加
- * - 楽観的UI更新：先に画面に表示してからサーバーに保存
- * - pendingAddsで保存中であることを記録（ポーリング時に消えないようにする）
- * - 成功時はUndoスタックに積む
- * - 失敗時はロールバック
- */
+let qtyTimer = {};
+function scheduleQtySave(item, newQty){
+  clearTimeout(qtyTimer[item.itemId]);
+  qtyTimer[item.itemId] = setTimeout(async ()=>{
+    const res = await apiPost('update', { itemId: item.itemId, qty: newQty });
+    if(res && res.ok){
+      const idx = lastSnapshot.items.findIndex(x=>x.itemId===item.itemId);
+      if(idx!==-1) lastSnapshot.items[idx].qty = newQty;
+    } else {
+      toast('数量の保存に失敗しました');
+    }
+  }, 600);
+}
+
 async function add(){
   const nameEl = document.getElementById('name');
-  const qtyEl  = document.getElementById('qty');
-  const name = (nameEl.value || '').trim();
-  const qty  = (qtyEl.value  || '').trim();
+  const qtyEl = document.getElementById('qty');
+  const name = nameEl.value.trim();
+  const qty = qtyEl.value.trim();
   if(!name) return;
 
-  // 楽観的に先に表示
   const tempId = 'tmp-'+Math.random().toString(36).slice(2);
-  pendingAdds.add(tempId); // 保存中フラグ
+  pendingAdds.add(tempId);
   lastSnapshot.items.unshift({ itemId: tempId, name, qty, done:false, updatedAt: new Date().toISOString() });
   render();
   nameEl.value=''; qtyEl.value='';
 
   const res = await apiPost('add', { name, qty });
   if(res && res.ok){
-    // 成功：pendingから削除（次のポーリングでサーバーから取得）
     pendingAdds.delete(tempId);
     lastSnapshot.items = lastSnapshot.items.filter(x=>x.itemId!==tempId);
-    // 新規アイテムとして記録（アニメーション用）
     newItemIds.add(res.itemId);
     undoStack.push({ type:'add', item:{ itemId: res.itemId, name, qty }});
     setUndoEnabled();
 
-    // スマホで入力欄が展開されている場合は閉じる
     const inputRow = document.getElementById('inputRow');
     const toggleBtn = document.getElementById('addToggleBtn');
     if(!inputRow.classList.contains('collapsed') && window.innerWidth <= 768){
       inputRow.classList.add('collapsed');
-      toggleBtn.textContent = '+ 追加する';
+      toggleBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> 追加する';
     }
   }else{
-    // 失敗時ロールバック
     pendingAdds.delete(tempId);
     lastSnapshot.items = lastSnapshot.items.filter(x=>x.itemId!==tempId);
     render();
@@ -1061,45 +1101,28 @@ async function add(){
   }
 }
 
-/**
- * アイテム完了（チェックを入れる）
- * - 楽観的UI更新：先に画面から非表示にしてからサーバーに保存
- * - 成功時はUndoスタックに積む
- * - 失敗時は元に戻す
- */
 async function complete(item){
-  // 完了処理中フラグを立てる
   pendingCompletes.add(item.itemId);
 
-  // 先に非表示
   lastSnapshot.items = lastSnapshot.items.filter(x=>x.itemId!==item.itemId);
   render();
   undoStack.push({ type:'toggle', item }); setUndoEnabled();
 
   const res = await apiPost('toggle', { itemId:item.itemId, done:true });
 
-  // 完了処理中フラグを削除
   pendingCompletes.delete(item.itemId);
 
   if(!(res && res.ok)){
-    // 失敗時戻す
     lastSnapshot.items.unshift(item); render();
     undoStack.pop(); setUndoEnabled();
     toast('更新に失敗しました');
   }
 }
 
-
 // ============================================================
 // Undo機能
 // ============================================================
 
-/**
- * 元に戻す（Undo）
- * - スタックから最後の操作を取り出して逆操作を実行
- * - toggle → done:falseで復元
- * - add → deleteで削除
- */
 async function undo(){
   if(undoStack.length===0) return;
   const last = undoStack.pop(); setUndoEnabled();
@@ -1108,69 +1131,40 @@ async function undo(){
     const res = await apiPost('toggle', { itemId:last.item.itemId, done:false });
     if(res && res.ok){ await load(); toast('元に戻しました'); }
     else { undoStack.push(last); setUndoEnabled(); toast('元に戻せませんでした'); }
-  }else if(last.type==='add'){
+  }
+
+  if(last.type==='add'){
     const res = await apiPost('delete', { itemId:last.item.itemId });
-    if(res && res.ok){ await load(); toast('追加を取り消しました'); }
-    else { undoStack.push(last); setUndoEnabled(); toast('取り消し失敗'); }
+    if(res && res.ok){ await load(); toast('削除しました'); }
+    else { undoStack.push(last); setUndoEnabled(); toast('削除できませんでした'); }
   }
 }
 
 // ============================================================
-// インライン数量編集（デバウンス）
+// アーカイブ
 // ============================================================
 
-let qtySaveTimer = null;
-
-/**
- * 数量保存のスケジュール（デバウンス）
- * @param {Object} item - 編集対象のアイテム
- * @param {string} newQty - 新しい数量
- *
- * 仕組み:
- * - 入力のたびに呼ばれるが、250ms待ってから保存
- * - 連続入力時は前のタイマーをキャンセルして最後の値だけ保存
- */
-function scheduleQtySave(item, newQty){
-  clearTimeout(qtySaveTimer);
-  qtySaveTimer = setTimeout(async ()=>{
-    const res = await apiPost('update', { itemId:item.itemId, qty:newQty });
-    if(!(res && res.ok)){ toast('数量を保存できませんでした'); }
-  }, 250);
-}
-
-// ============================================================
-// アーカイブ表示・復元
-// ============================================================
-
-/**
- * アーカイブ一覧のトグル表示
- * - lastSnapshot.archivedから完了済みアイテムを表示
- * - 各アイテムに「戻す」ボタンを配置
- */
 function toggleArchive(){
   const archiveListEl = document.getElementById('archiveList');
   const archiveBtn = document.getElementById('archiveBtn');
   const isVisible = archiveListEl.style.display === 'block';
 
   if(isVisible){
-    // 閉じる
     archiveListEl.style.display = 'none';
-    archiveBtn.textContent = 'アーカイブを見る';
+    archiveBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg> アーカイブを見る';
   } else {
-    // 開く
     archiveListEl.style.display = 'block';
-    archiveBtn.textContent = 'アーカイブを閉じる';
+    archiveBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg> アーカイブを閉じる';
 
-    // アーカイブアイテムを描画
     const archived = lastSnapshot.archived || [];
-    let html = '<div class="archive-header" style="padding:12px 16px;background:#f9f9f9;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center"><strong>アーカイブ</strong><button class="btn" id="closeArchiveBtn2" style="font-size:12px;padding:6px 12px">閉じる</button></div>';
+    let html = `<div class="archive-header"><strong>アーカイブ (${archived.length}件)</strong><button class="btn" id="closeArchiveBtn2" aria-label="閉じる">閉じる</button></div>`;
 
     if(archived.length === 0){
-      html += '<div style="text-align:center;padding:40px;color:#999">アーカイブされたアイテムはありません</div>';
+      html += '<div style="text-align:center;padding:40px;color:var(--text-tertiary)">アーカイブされたアイテムはありません</div>';
     } else {
       archived.forEach(item=>{
         const dateText = formatRelativeTime(item.updatedAt);
-        const qtyText = item.qty ? `<span style="margin-left:8px;padding:2px 8px;background:rgba(0,122,255,0.1);color:#007aff;border-radius:6px;font-size:11px;font-weight:600">${escapeHtml(item.qty)}</span>` : '';
+        const qtyText = item.qty ? `<span style="margin-left:8px;padding:2px 8px;background:rgba(0,122,255,0.1);color:var(--accent);border-radius:6px;font-size:11px;font-weight:600">${escapeHtml(item.qty)}</span>` : '';
         html += `<div class="item" style="grid-template-columns:1fr 70px">
           <div class="item-content">
             <div class="item-main">
@@ -1178,7 +1172,7 @@ function toggleArchive(){
             </div>
             <div class="date">${dateText}</div>
           </div>
-          <button class="btn" style="font-size:12px;padding:6px 12px" onclick="restoreItem('${item.itemId}')">戻す</button>
+          <button class="btn" style="font-size:12px;padding:6px 12px" onclick="restoreItem('${item.itemId}')" aria-label="${escapeHtml(item.name)}を復元">戻す</button>
         </div>`;
       });
     }
@@ -1188,14 +1182,9 @@ function toggleArchive(){
   }
 }
 
-// 後方互換性のために残す
 function showArchive(){ toggleArchive(); }
 function hideArchive(){ toggleArchive(); }
 
-/**
- * アーカイブからアイテムを復元
- * @param {string} itemId - 復元するアイテムのID
- */
 async function restoreItem(itemId){
   const res = await apiPost('toggle', { itemId, done:false });
   if(res && res.ok){
@@ -1206,22 +1195,10 @@ async function restoreItem(itemId){
   }
 }
 
-/**
- * HTMLエスケープ（XSS対策）
- * @param {string} text - エスケープするテキスト
- * @return {string} エスケープ済みHTML
- */
-function escapeHtml(text){
-  const div = document.createElement('div');
-  div.textContent = text || '';
-  return div.innerHTML;
-}
+// ============================================================
+// 日時フォーマット
+// ============================================================
 
-/**
- * 日時を相対表記にフォーマット（例: 2分前、今日 14:30、昨日、2025/10/03）
- * @param {string} isoString - ISO8601形式の日時文字列
- * @return {string} フォーマット済み日時
- */
 function formatRelativeTime(isoString){
   if(!isoString) return '';
 
@@ -1232,20 +1209,15 @@ function formatRelativeTime(isoString){
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
-  // 1分未満
   if(diffMins < 1) return 'たった今';
-
-  // 1時間未満
   if(diffMins < 60) return `${diffMins}分前`;
 
-  // 24時間未満（今日）
   if(diffHours < 24 && date.getDate() === now.getDate()){
     const hours = String(date.getHours()).padStart(2, '0');
     const mins = String(date.getMinutes()).padStart(2, '0');
     return `今日 ${hours}:${mins}`;
   }
 
-  // 昨日
   const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
   if(date.getDate() === yesterday.getDate() && date.getMonth() === yesterday.getMonth()){
@@ -1254,10 +1226,8 @@ function formatRelativeTime(isoString){
     return `昨日 ${hours}:${mins}`;
   }
 
-  // 7日以内
   if(diffDays < 7) return `${diffDays}日前`;
 
-  // それ以降
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
@@ -1272,32 +1242,29 @@ document.getElementById('passwordInput').addEventListener('keydown', e=>{ if(e.k
 document.getElementById('addBtn').onclick = add;
 document.getElementById('refreshBtn').onclick = ()=>load(true);
 document.getElementById('archiveBtn').onclick = toggleArchive;
-document.getElementById('closeArchiveBtn').onclick = toggleArchive;
 document.getElementById('undoBtn').onclick = undo;
 document.getElementById('name').addEventListener('keydown', e=>{
-  // isComposing=trueは日本語変換中（変換確定のEnterは無視）
   if(e.key==='Enter' && !e.isComposing) add();
 });
 document.getElementById('qty').addEventListener('keydown', e=>{
   if(e.key==='Enter' && !e.isComposing) add();
 });
 
-// スマホ用：入力欄の折りたたみトグル
 document.getElementById('addToggleBtn').onclick = function(){
   const inputRow = document.getElementById('inputRow');
   const isCollapsed = inputRow.classList.contains('collapsed');
 
   if(isCollapsed){
     inputRow.classList.remove('collapsed');
-    this.textContent = '− 閉じる';
+    this.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg> 閉じる';
   } else {
     inputRow.classList.add('collapsed');
-    this.textContent = '+ 追加する';
+    this.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> 追加する';
   }
 };
 
 // ============================================================
-// 自動ログイン（LocalStorageからパスワード復元）
+// 自動ログイン
 // ============================================================
 window.addEventListener('load', ()=>{
   const saved = localStorage.getItem('password');
@@ -1308,12 +1275,21 @@ window.addEventListener('load', ()=>{
     boot();
   }
 
-  // スマホの場合、初期状態で入力欄を折りたたむ
   if(window.innerWidth <= 768){
     const inputRow = document.getElementById('inputRow');
     inputRow.classList.add('collapsed');
   }
 });
+
+// ============================================================
+// PWA対応（任意：beforeinstallprompt）
+// ============================================================
+// let deferredPrompt;
+// window.addEventListener('beforeinstallprompt', (e) => {
+//   e.preventDefault();
+//   deferredPrompt = e;
+//   // 小さなバナーを表示する場合はここに実装
+// });
 </script>
 </body>
 </html>
