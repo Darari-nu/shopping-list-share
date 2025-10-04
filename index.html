@@ -27,6 +27,7 @@
  * - v6.0 (2025-10-04): デザイン刷新（Apple風ミニマル、モーション設計、WCAG AA準拠、SVGアイコン、PWA対応）
  * - v6.1 (2025-10-04): ダークモード削除（ライトモードのみに統一）
  * - v7.0 (2025-10-04): UIオーバーホール（ヒーローバナー、白ガラスカード、ピル型入力、タイル+左インジケータ、ピンク×オレンジ配色）
+ * - v7.1 (2025-10-04): カラーパレット変更（ピンク×オレンジ → 青×緑）
  *
  * 技術スタック:
  * - Vanilla JavaScript（フレームワークなし）
@@ -38,16 +39,16 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="theme-color" content="#e52e71" />
+<meta name="theme-color" content="#10b981" />
 <title>夫婦共有 買い物リスト</title>
 <link rel="manifest" href="/manifest.webmanifest" />
 <style>
   /* ============================================================
-   * カラーパレット（ピンク×オレンジ）
+   * カラーパレット（青×緑）
    * ============================================================ */
   :root {
-    --accent: #e52e71;
-    --accent-2: #ff8a00;
+    --accent: #10b981;
+    --accent-2: #3b82f6;
     --text-primary: #0f172a;
     --text-secondary: #64748b;
     --text-tertiary: #94a3b8;
@@ -87,7 +88,7 @@
     justify-content: center;
     position: relative;
     border-radius: 0 0 28px 28px;
-    box-shadow: 0 8px 24px rgba(229, 46, 113, 0.3);
+    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
   }
 
   .hero h1 {
@@ -176,7 +177,7 @@
 
   .pill-container:focus-within {
     border-color: var(--accent);
-    box-shadow: 0 0 0 5px rgba(229, 46, 113, 0.15), 0 2px 8px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 0 0 5px rgba(16, 185, 129, 0.15), 0 2px 8px rgba(0, 0, 0, 0.06);
   }
 
   .pill-container input {
@@ -206,14 +207,14 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(229, 46, 113, 0.4);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
     transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
     flex-shrink: 0;
   }
 
   .addBtnFab:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(229, 46, 113, 0.5);
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.5);
   }
 
   .addBtnFab:active {
@@ -239,7 +240,7 @@
       color: #fff;
       border: none;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(229, 46, 113, 0.4);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
       margin-bottom: 12px;
     }
 
@@ -308,7 +309,7 @@
   }
 
   .item:hover {
-    background: rgba(229, 46, 113, 0.04);
+    background: rgba(16, 185, 129, 0.04);
   }
 
   /* 新規追加アイテムのみアニメーション */
@@ -372,7 +373,7 @@
   .item input[type=checkbox]:hover {
     border-color: var(--accent);
     transform: scale(1.1);
-    box-shadow: 0 0 0 4px rgba(229, 46, 113, 0.15);
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
   }
 
   .item input[type=checkbox]:checked {
@@ -394,8 +395,8 @@
   }
 
   @keyframes checkRipple {
-    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(229, 46, 113, 0.4); }
-    50% { transform: scale(1.15); box-shadow: 0 0 0 8px rgba(229, 46, 113, 0); }
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+    50% { transform: scale(1.15); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
     100% { transform: scale(1); }
   }
 
@@ -461,7 +462,7 @@
   .qtyInput:focus {
     outline: none;
     border-color: var(--accent);
-    box-shadow: 0 0 0 4px rgba(229, 46, 113, 0.15);
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
   }
 
   /* 数量バッジ */
@@ -470,13 +471,13 @@
     display: inline-block;
     margin-left: 8px;
     padding: 4px 10px;
-    background: linear-gradient(135deg, rgba(255, 138, 0, 0.12) 0%, rgba(229, 46, 113, 0.12) 100%);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(16, 185, 129, 0.12) 100%);
     color: var(--accent);
     border-radius: 8px;
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.3px;
-    border: 1px solid rgba(229, 46, 113, 0.2);
+    border: 1px solid rgba(16, 185, 129, 0.2);
   }
 
   /* ============================================================
@@ -531,11 +532,11 @@
   .btn.primary {
     background: linear-gradient(135deg, var(--accent-2) 0%, var(--accent) 100%);
     color: #fff;
-    box-shadow: 0 4px 12px rgba(229, 46, 113, 0.4);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
   }
 
   .btn.primary:hover {
-    box-shadow: 0 6px 16px rgba(229, 46, 113, 0.5);
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.5);
   }
 
   .btn:disabled {
@@ -629,7 +630,7 @@
   input[type=password]:focus {
     outline: none;
     border-color: var(--accent);
-    box-shadow: 0 0 0 5px rgba(229, 46, 113, 0.15);
+    box-shadow: 0 0 0 5px rgba(16, 185, 129, 0.15);
   }
 
   /* ============================================================
@@ -658,7 +659,7 @@
     display: inline-block;
     margin-left: 8px;
     padding: 3px 10px;
-    background: linear-gradient(135deg, rgba(255, 138, 0, 0.15) 0%, rgba(229, 46, 113, 0.15) 100%);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(16, 185, 129, 0.15) 100%);
     color: var(--accent);
     border-radius: 999px;
     font-size: 12px;
@@ -678,16 +679,16 @@
   }
 
   #archiveBtn {
-    background: rgba(229, 46, 113, 0.08);
+    background: rgba(16, 185, 129, 0.08);
     color: var(--accent);
-    border: 1px solid rgba(229, 46, 113, 0.2);
+    border: 1px solid rgba(16, 185, 129, 0.2);
     padding: 8px 16px;
     font-size: 13px;
     border-radius: 999px;
   }
 
   #archiveBtn:hover {
-    background: rgba(229, 46, 113, 0.12);
+    background: rgba(16, 185, 129, 0.12);
     transform: translateY(-1px);
   }
 
@@ -1131,7 +1132,7 @@ function toggleArchive(){
     } else {
       archived.forEach(item=>{
         const dateText = formatRelativeTime(item.updatedAt);
-        const qtyBadge = item.qty ? `<span style="margin-left:8px;padding:3px 10px;background:linear-gradient(135deg, rgba(255, 138, 0, 0.12) 0%, rgba(229, 46, 113, 0.12) 100%);color:var(--accent);border-radius:8px;font-size:11px;font-weight:700;border:1px solid rgba(229,46,113,0.2)">${escapeHtml(item.qty)}</span>` : '';
+        const qtyBadge = item.qty ? `<span style="margin-left:8px;padding:3px 10px;background:linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(16, 185, 129, 0.12) 100%);color:var(--accent);border-radius:8px;font-size:11px;font-weight:700;border:1px solid rgba(16,185,129,0.2)">${escapeHtml(item.qty)}</span>` : '';
         html += `<div class="item" style="grid-template-columns:1fr auto">
           <div class="item-content">
             <div class="item-main">
