@@ -1027,8 +1027,8 @@ function boot(){
 async function load(force=false){
   if(isLoading && !force) return; // 前回のリクエストがまだ実行中かつ強制実行でない場合は中断
 
+  isLoading = true;
   try {
-    isLoading = true;
     const res = await apiGet('list');
 
     if(res && res.ok){
@@ -1051,6 +1051,11 @@ async function load(force=false){
       const cache = localStorage.getItem('snapshot');
       if(cache){ lastSnapshot = JSON.parse(cache); render(); }
     }
+  } catch(err) {
+    console.error('load() error:', err);
+    setStatus('通信エラー');
+    const cache = localStorage.getItem('snapshot');
+    if(cache){ lastSnapshot = JSON.parse(cache); render(); }
   } finally {
     isLoading = false;
   }
