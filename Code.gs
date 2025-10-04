@@ -13,6 +13,7 @@
  * - v3.1 (2025-10-04): doGetのパラメータ名をpathからactionに修正（フロントエンドと統一）
  * - v4.0 (2025-10-04): toggleItem()のパフォーマンス改善（setValue×3 → setValues×1で3倍高速化）
  * - v4.1 (2025-10-04): パフォーマンス改善（updateItemの一括更新、軽量認証エンドポイント追加）
+ * - v5.0 (2025-10-04): 大幅パフォーマンス改善（getLastRow使用、CacheService導入、全関数最適化）
  *
  * データ構造:
  * - items シート: 買い物アイテムの保存（未完了/完了の両方）
@@ -196,12 +197,28 @@ function settingsMap() {
  * @return {Object} {ok, items, archived, archivedCount}
  */
 function listItems(household) {
+  const cache = CacheService.getScriptCache();
+  const cacheKey = 'list_' + household;
+  const cached = cache.get(cacheKey);
+
+  if (cached) {
+    return JSON.parse(cached);
+  }
+
   const sheet = itemsSheet();
-  const data = sheet.getDataRange().getValues();
+  const lastRow = sheet.getLastRow();
+
+  if (lastRow <= 1) {
+    return { ok: true, items: [], archived: [], archivedCount: 0 };
+  }
+
+  // 必要な列のみ取得: A(household), B(listId), C(itemId), D(name), E(qty), F(note), H(done), I(updatedAt)
+  const range = sheet.getRange(2, 1, lastRow - 1, 9);
+  const data = range.getValues();
   const items = [];
   const archived = [];
 
-  for (let i = 1; i < data.length; i++) {
+  for (let i = 0; i < data.length; i++) {
     if (data[i][0] === household && data[i][1] === 'default') {
       const done = data[i][7] === true || data[i][7] === 'TRUE';
       const item = {
@@ -224,7 +241,21 @@ function listItems(household) {
   items.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
   archived.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 
-  return { ok: true, items: items, archived: archived, archivedCount: archived.length };
+  const result = { ok: true, items: items, archived: archived, archivedCount: archived.length };
+
+  // 3秒間キャッシュ
+  cache.put(cacheKey, JSON.stringify(result), 3);
+
+  return result;
+}
+
+/**
+ * キャッシュ無効化
+ * @param {string} household - 世帯ID
+ */
+function invalidateCache(household) {
+  const cache = CacheService.getScriptCache();
+  cache.remove('list_' + household);
 }
 
 /**
@@ -258,6 +289,8 @@ function addItem(body, user) {
     user
   ]);
 
+  invalidateCache(household);
+
   return { ok: true, itemId: itemId };
 }
 
@@ -277,13 +310,20 @@ function toggleItem(body, user) {
   }
 
   const sheet = itemsSheet();
-  const data = sheet.getDataRange().getValues();
+  const lastRow = sheet.getLastRow();
 
-  for (let i = 1; i < data.length; i++) {
+  if (lastRow <= 1) {
+    throw new Error('Item not found');
+  }
+
+  const data = sheet.getRange(2, 1, lastRow - 1, 9).getValues();
+
+  for (let i = 0; i < data.length; i++) {
     if (data[i][0] === household && data[i][2] === itemId) {
       const now = new Date().toISOString();
       // 一括更新: H列(done), I列(updatedAt), J列(updatedBy)
-      sheet.getRange(i + 1, 8, 1, 3).setValues([[done, now, user]]);
+      sheet.getRange(i + 2, 8, 1, 3).setValues([[done, now, user]]);
+      invalidateCache(household);
       return { ok: true };
     }
   }
@@ -306,11 +346,18 @@ function deleteItem(body, user) {
   }
 
   const sheet = itemsSheet();
-  const data = sheet.getDataRange().getValues();
+  const lastRow = sheet.getLastRow();
 
-  for (let i = 1; i < data.length; i++) {
+  if (lastRow <= 1) {
+    throw new Error('Item not found');
+  }
+
+  const data = sheet.getRange(2, 1, lastRow - 1, 3).getValues();
+
+  for (let i = 0; i < data.length; i++) {
     if (data[i][0] === household && data[i][2] === itemId) {
-      sheet.deleteRow(i + 1);
+      sheet.deleteRow(i + 2);
+      invalidateCache(household);
       return { ok: true };
     }
   }
@@ -353,10 +400,16 @@ function suggest(household, q) {
  * @return {Object|null} {row: 行番号, data: 行データ} または null
  */
 function findRowById(sheet, itemId) {
-  const data = sheet.getDataRange().getValues();
-  for (let i = 1; i < data.length; i++) {
+  const lastRow = sheet.getLastRow();
+
+  if (lastRow <= 1) {
+    return null;
+  }
+
+  const data = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
+  for (let i = 0; i < data.length; i++) {
     if (data[i][2] === itemId) {
-      return { row: i + 1, data: data[i] };
+      return { row: i + 2, data: data[i] };
     }
   }
   return null;
@@ -409,6 +462,8 @@ function updateItem(body) {
 
   // 一括更新: name, qty, note, updatedAt
   sheet.getRange(row, 4, 1, 6).setValues([[newName, newQty, newNote, currentData[6], currentData[7], newUpdatedAt]])
+
+  invalidateCache(household);
 
   return { ok: true };
 }
