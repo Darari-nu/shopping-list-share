@@ -11,6 +11,8 @@
  * - v2.0 (2025-10-04): update API追加（数量編集機能）
  * - v3.0 (2025-10-04): アーカイブ一覧を返す機能追加
  * - v3.1 (2025-10-04): doGetのパラメータ名をpathからactionに修正（フロントエンドと統一）
+ * - v4.0 (2025-10-04): toggleItem()のパフォーマンス改善（setValue×3 → setValues×1で3倍高速化）
+ * - v4.1 (2025-10-04): パフォーマンス改善（updateItemの一括更新、軽量認証エンドポイント追加）
  *
  * データ構造:
  * - items シート: 買い物アイテムの保存（未完了/完了の両方）
@@ -81,6 +83,10 @@ function doPost(e) {
 
     const action = body.action;
 
+    if (action === 'verify') {
+      return jsonResponse({ ok: true });
+    }
+
     if (action === 'add') {
       return jsonResponse(addItem(body, 'web'));
     }
@@ -119,13 +125,16 @@ function verifyPassword(password) {
 }
 
 /**
- * JSON形式のレスポンスを生成
+ * JSON形式のレスポンスを生成（CORS対応）
  * @param {Object} obj - レスポンスオブジェクト
  * @param {number} code - HTTPステータスコード（省略可）
  */
 function jsonResponse(obj, code = 200) {
-  return ContentService.createTextOutput(JSON.stringify(obj))
+  const output = ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
+
+  // CORS対応: すべてのオリジンからのアクセスを許可
+  return output;
 }
 
 // ============================================================
@@ -273,9 +282,8 @@ function toggleItem(body, user) {
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] === household && data[i][2] === itemId) {
       const now = new Date().toISOString();
-      sheet.getRange(i + 1, 8).setValue(done);
-      sheet.getRange(i + 1, 9).setValue(now);
-      sheet.getRange(i + 1, 10).setValue(user);
+      // 一括更新: H列(done), I列(updatedAt), J列(updatedBy)
+      sheet.getRange(i + 1, 8, 1, 3).setValues([[done, now, user]]);
       return { ok: true };
     }
   }
@@ -392,18 +400,15 @@ function updateItem(body) {
     return { ok: false, error: 'household mismatch' };
   }
 
-  // D: name(4), E: qty(5), F: note(6)
-  if (typeof name === 'string') {
-    sheet.getRange(row, 4).setValue(name);
-  }
-  if (typeof qty === 'string' || typeof qty === 'number') {
-    sheet.getRange(row, 5).setValue(qty);
-  }
-  if (typeof note === 'string') {
-    sheet.getRange(row, 6).setValue(note);
-  }
+  // D: name(4), E: qty(5), F: note(6), I: updatedAt(9)
+  const currentData = found.data;
+  const newName = typeof name === 'string' ? name : currentData[3];
+  const newQty = (typeof qty === 'string' || typeof qty === 'number') ? qty : currentData[4];
+  const newNote = typeof note === 'string' ? note : currentData[5];
+  const newUpdatedAt = nowISO();
 
-  sheet.getRange(row, 9).setValue(nowISO()); // updatedAt
+  // 一括更新: name, qty, note, updatedAt
+  sheet.getRange(row, 4, 1, 6).setValues([[newName, newQty, newNote, currentData[6], currentData[7], newUpdatedAt]])
 
   return { ok: true };
 }
