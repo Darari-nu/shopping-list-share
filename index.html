@@ -24,7 +24,8 @@
  * - v5.1 (2025-10-04): アイテム追加アニメーションを新規追加時のみに修正（ポーリング再描画時に動かないように）
  * - v5.2 (2025-10-04): スマホ1画面最適化（アイテムの高さ圧縮、入力欄折りたたみ式、日付を右上配置、ヘッダー縮小、極小デバイス対応）
  * - v5.3 (2025-10-04): UIブラッシュアップ（全ボタンにグラデーション適用、アーカイブのトグル開閉機能追加）
- * - v6.0 (2025-10-04): デザイン刷新（Apple風ミニマル、ダークモード対応、モーション設計、WCAG AA準拠、SVGアイコン、PWA対応）
+ * - v6.0 (2025-10-04): デザイン刷新（Apple風ミニマル、モーション設計、WCAG AA準拠、SVGアイコン、PWA対応）
+ * - v6.1 (2025-10-04): ダークモード削除（ライトモードのみに統一）
  *
  * 技術スタック:
  * - Vanilla JavaScript（フレームワークなし）
@@ -41,10 +42,9 @@
 <link rel="manifest" href="/manifest.webmanifest" />
 <style>
   /* ============================================================
-   * カラーパレット（Apple風ミニマル + ダークモード）
+   * カラーパレット（Apple風ミニマル）
    * ============================================================ */
   :root {
-    /* ライトモード */
     --bg-from: #f8fafc;
     --bg-to: #e2e8f0;
     --card-bg: rgba(255, 255, 255, 0.9);
@@ -61,27 +61,6 @@
     --line: rgba(226, 232, 240, 0.8);
     --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
     --shadow-lg: 0 20px 60px rgba(15, 23, 42, 0.12);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg-from: #0f172a;
-      --bg-to: #1e293b;
-      --card-bg: rgba(30, 41, 59, 0.9);
-      --card-border: rgba(51, 65, 85, 0.8);
-
-      --text-primary: #f1f5f9;
-      --text-secondary: #94a3b8;
-      --text-tertiary: #64748b;
-
-      --accent: #3b82f6;
-      --accent-hover: #2563eb;
-      --accent-light: rgba(59, 130, 246, 0.2);
-
-      --line: rgba(51, 65, 85, 0.8);
-      --shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-      --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.5);
-    }
   }
 
   /* ============================================================
@@ -176,12 +155,6 @@
     background: rgba(255, 255, 255, 0.5);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--line);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .statusBar {
-      background: rgba(30, 41, 59, 0.5);
-    }
   }
 
   .statusBar strong {
@@ -297,23 +270,10 @@
     letter-spacing: -0.2px;
   }
 
-  @media (prefers-color-scheme: dark) {
-    .btn {
-      background: linear-gradient(135deg, rgba(51, 65, 85, 0.95) 0%, rgba(71, 85, 105, 0.95) 100%);
-      color: var(--text-primary);
-    }
-  }
-
   .btn:hover {
     background: linear-gradient(135deg, #fff 0%, #f5f5fa 100%);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
     transform: translateY(-2px);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .btn:hover {
-      background: linear-gradient(135deg, rgba(71, 85, 105, 0.95) 0%, rgba(100, 116, 139, 0.95) 100%);
-    }
   }
 
   .btn:active {
@@ -598,12 +558,6 @@
     position: sticky;
     top: 0;
     z-index: 10;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .archive-header {
-      background: rgba(30, 41, 59, 0.8);
-    }
   }
 
   .archive-header strong {
