@@ -69,6 +69,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
+<!-- Favicon -->
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+
 <!-- Apple Touch Icon -->
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
@@ -1020,32 +1024,35 @@ function boot(){
 // データ読み込み
 // ============================================================
 
-async function load(first=false){
-  if(isLoading) return; // 前回のリクエストがまだ実行中なら中断
+async function load(force=false){
+  if(isLoading && !force) return; // 前回のリクエストがまだ実行中かつ強制実行でない場合は中断
 
-  isLoading = true;
-  const res = await apiGet('list');
-  isLoading = false;
+  try {
+    isLoading = true;
+    const res = await apiGet('list');
 
-  if(res && res.ok){
-    const pending = lastSnapshot.items.filter(x =>
-      pendingAdds.has(x.itemId) ||
-      pendingCompletes.has(x.itemId)
-    );
+    if(res && res.ok){
+      const pending = lastSnapshot.items.filter(x =>
+        pendingAdds.has(x.itemId) ||
+        pendingCompletes.has(x.itemId)
+      );
 
-    const serverItems = (res.items || []).filter(x =>
-      !pendingCompletes.has(x.itemId)
-    );
+      const serverItems = (res.items || []).filter(x =>
+        !pendingCompletes.has(x.itemId)
+      );
 
-    lastSnapshot = { items: [...pending, ...serverItems], archived: res.archived || [] };
-    localStorage.setItem('snapshot', JSON.stringify(lastSnapshot));
-    render();
-    document.getElementById('archCount').textContent = `アーカイブ: ${lastSnapshot.archived.length} 件`;
-    setStatus('同期OK');
-  } else {
-    setStatus('オフライン');
-    const cache = localStorage.getItem('snapshot');
-    if(cache){ lastSnapshot = JSON.parse(cache); render(); }
+      lastSnapshot = { items: [...pending, ...serverItems], archived: res.archived || [] };
+      localStorage.setItem('snapshot', JSON.stringify(lastSnapshot));
+      render();
+      document.getElementById('archCount').textContent = `アーカイブ: ${lastSnapshot.archived.length} 件`;
+      setStatus('同期OK');
+    } else {
+      setStatus('オフライン');
+      const cache = localStorage.getItem('snapshot');
+      if(cache){ lastSnapshot = JSON.parse(cache); render(); }
+    }
+  } finally {
+    isLoading = false;
   }
 }
 
@@ -1188,8 +1195,20 @@ async function complete(item){
     delete qtyTimer[item.itemId];
   }
 
+  // 未完了リストから削除
   lastSnapshot.items = lastSnapshot.items.filter(x=>x.itemId!==item.itemId);
+
+  // アーカイブに追加
+  item.done = true;
+  item.updatedAt = new Date().toISOString();
+  lastSnapshot.archived.unshift(item);
+
   render();
+  const wasOpen = document.getElementById('archiveList').style.display === 'block';
+  if(wasOpen){
+    renderArchive();
+  }
+
   undoStack.push({ type:'toggle', item }); setUndoEnabled();
 
   const res = await apiPost('toggle', { itemId:item.itemId, done:true });
@@ -1199,7 +1218,13 @@ async function complete(item){
   document.body.classList.remove('processing');
 
   if(!(res && res.ok)){
-    lastSnapshot.items.unshift(item); render();
+    // ロールバック
+    lastSnapshot.archived = lastSnapshot.archived.filter(x=>x.itemId!==item.itemId);
+    lastSnapshot.items.unshift(item);
+    render();
+    if(wasOpen){
+      renderArchive();
+    }
     undoStack.pop(); setUndoEnabled();
     toast('更新に失敗しました');
   }
@@ -1236,6 +1261,35 @@ async function undo(){
 // アーカイブ
 // ============================================================
 
+function renderArchive(){
+  const archiveListEl = document.getElementById('archiveList');
+  const archived = lastSnapshot.archived || [];
+  let html = `<div class="archive-header"><strong>アーカイブ <span class="archive-badge">${archived.length}</span></strong><button class="btn" id="closeArchiveBtn2" aria-label="閉じる" style="font-size:12px;padding:6px 12px;">閉じる</button></div>`;
+
+  if(archived.length === 0){
+    html += '<div style="text-align:center;padding:40px;color:var(--text-tertiary)">アーカイブされたアイテムはありません</div>';
+  } else {
+    archived.forEach(item=>{
+      const dateText = formatRelativeTime(item.updatedAt);
+      const qtyBadge = item.qty ? `<span style="margin-left:8px;padding:3px 10px;background:linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(16, 185, 129, 0.12) 100%);color:var(--accent);border-radius:8px;font-size:11px;font-weight:700;border:1px solid rgba(16,185,129,0.2)">${escapeHtml(item.qty)}</span>` : '';
+      html += `<div class="item" style="grid-template-columns:1fr auto auto">
+        <div class="item-content">
+          <div class="item-main">
+            <div class="name">${escapeHtml(item.name)}${qtyBadge}</div>
+          </div>
+          <div class="date">${dateText}</div>
+        </div>
+        <button class="btn" style="font-size:12px;padding:6px 12px;" onclick="restoreItem('${item.itemId}', event)" aria-label="${escapeHtml(item.name)}を復元">戻す</button>
+        <button class="btn" style="font-size:12px;padding:6px 12px;color:#ef4444;" onclick="deleteArchivedItem('${item.itemId}', event)" aria-label="${escapeHtml(item.name)}を削除">削除</button>
+      </div>`;
+    });
+  }
+
+  archiveListEl.innerHTML = html;
+  document.getElementById('closeArchiveBtn2').onclick = toggleArchive;
+  document.getElementById('archCount').textContent = `アーカイブ: ${archived.length} 件`;
+}
+
 function toggleArchive(){
   const archiveListEl = document.getElementById('archiveList');
   const archiveBtn = document.getElementById('archiveBtn');
@@ -1247,31 +1301,7 @@ function toggleArchive(){
   } else {
     archiveListEl.style.display = 'block';
     archiveBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg> アーカイブを閉じる';
-
-    const archived = lastSnapshot.archived || [];
-    let html = `<div class="archive-header"><strong>アーカイブ <span class="archive-badge">${archived.length}</span></strong><button class="btn" id="closeArchiveBtn2" aria-label="閉じる" style="font-size:12px;padding:6px 12px;">閉じる</button></div>`;
-
-    if(archived.length === 0){
-      html += '<div style="text-align:center;padding:40px;color:var(--text-tertiary)">アーカイブされたアイテムはありません</div>';
-    } else {
-      archived.forEach(item=>{
-        const dateText = formatRelativeTime(item.updatedAt);
-        const qtyBadge = item.qty ? `<span style="margin-left:8px;padding:3px 10px;background:linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(16, 185, 129, 0.12) 100%);color:var(--accent);border-radius:8px;font-size:11px;font-weight:700;border:1px solid rgba(16,185,129,0.2)">${escapeHtml(item.qty)}</span>` : '';
-        html += `<div class="item" style="grid-template-columns:1fr auto auto">
-          <div class="item-content">
-            <div class="item-main">
-              <div class="name">${escapeHtml(item.name)}${qtyBadge}</div>
-            </div>
-            <div class="date">${dateText}</div>
-          </div>
-          <button class="btn" style="font-size:12px;padding:6px 12px;" onclick="restoreItem('${item.itemId}', event)" aria-label="${escapeHtml(item.name)}を復元">戻す</button>
-          <button class="btn" style="font-size:12px;padding:6px 12px;color:#ef4444;" onclick="deleteArchivedItem('${item.itemId}', event)" aria-label="${escapeHtml(item.name)}を削除">削除</button>
-        </div>`;
-      });
-    }
-
-    archiveListEl.innerHTML = html;
-    document.getElementById('closeArchiveBtn2').onclick = toggleArchive;
+    renderArchive();
   }
 }
 
@@ -1292,11 +1322,18 @@ async function restoreItem(itemId, event){
     return;
   }
 
+  // アーカイブから削除
   lastSnapshot.archived = lastSnapshot.archived.filter(x => x.itemId !== itemId);
+
+  // 未完了リストに追加
+  item.done = false;
+  lastSnapshot.items.unshift(item);
+
+  // UIを即座に更新
+  render();
   const wasOpen = document.getElementById('archiveList').style.display === 'block';
   if(wasOpen){
-    toggleArchive();
-    toggleArchive();
+    renderArchive();
   }
 
   const res = await apiPost('toggle', { itemId, done:false });
@@ -1304,15 +1341,16 @@ async function restoreItem(itemId, event){
   stopLoading(btn);
 
   if(res && res.ok){
-    await load();
+    await load(true);
     toast('元に戻しました');
   } else {
     // ロールバック
+    lastSnapshot.items = lastSnapshot.items.filter(x => x.itemId !== itemId);
     lastSnapshot.archived.push(item);
     lastSnapshot.archived.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    render();
     if(wasOpen){
-      toggleArchive();
-      toggleArchive();
+      renderArchive();
     }
     toast('元に戻せませんでした');
   }
@@ -1341,8 +1379,7 @@ async function deleteArchivedItem(itemId, event){
   lastSnapshot.archived = lastSnapshot.archived.filter(x => x.itemId !== itemId);
   const wasOpen = document.getElementById('archiveList').style.display === 'block';
   if(wasOpen){
-    toggleArchive();
-    toggleArchive();
+    renderArchive();
   }
 
   const res = await apiPost('delete', { itemId });
@@ -1350,15 +1387,14 @@ async function deleteArchivedItem(itemId, event){
   stopLoading(btn);
 
   if(res && res.ok){
-    await load();
+    await load(true);
     toast('削除しました');
   } else {
     // ロールバック
     lastSnapshot.archived.push(item);
     lastSnapshot.archived.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
     if(wasOpen){
-      toggleArchive();
-      toggleArchive();
+      renderArchive();
     }
     toast('削除できませんでした');
   }
