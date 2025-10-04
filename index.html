@@ -705,6 +705,13 @@
     align-items: center;
   }
 
+  /* PC表示時のアーカイブ情報の配置を明示 */
+  @media (min-width: 769px) {
+    #archInfo {
+      display: flex !important;
+    }
+  }
+
   #archiveBtn {
     background: rgba(16, 185, 129, 0.08);
     color: var(--accent);
