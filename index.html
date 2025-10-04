@@ -23,6 +23,7 @@
  * - v5.0 (2025-10-04): デザイン強化（ノイズグラデーション背景、チェックアニメーション、アイテム追加アニメーション、数量バッジのグラデーション、カード3D効果、空状態デザイン）
  * - v5.1 (2025-10-04): アイテム追加アニメーションを新規追加時のみに修正（ポーリング再描画時に動かないように）
  * - v5.2 (2025-10-04): スマホ1画面最適化（アイテムの高さ圧縮、入力欄折りたたみ式、日付を右上配置、ヘッダー縮小、極小デバイス対応）
+ * - v5.3 (2025-10-04): UIブラッシュアップ（全ボタンにグラデーション適用、アーカイブのトグル開閉機能追加）
  *
  * 技術スタック:
  * - Vanilla JavaScript（フレームワークなし）
@@ -205,7 +206,7 @@
       font-size: 16px;
       font-weight: 600;
       border-radius: 12px;
-      background: var(--accent);
+      background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
       color: #fff;
       border: none;
       cursor: pointer;
@@ -215,6 +216,7 @@
 
     .addToggleBtn:active {
       transform: scale(0.98);
+      background: linear-gradient(135deg, #0051d5 0%, #4640b3 100%);
     }
 
     .inputRow.collapsed {
@@ -258,7 +260,7 @@
     font-weight: 600;
     border: none;
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.9);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(245, 245, 250, 0.95) 100%);
     color: var(--text-primary);
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -267,7 +269,7 @@
   }
 
   .btn:hover {
-    background: #fff;
+    background: linear-gradient(135deg, #fff 0%, #f5f5fa 100%);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
     transform: translateY(-2px);
   }
@@ -278,18 +280,18 @@
   }
 
   .btn.primary {
-    background: var(--accent);
+    background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
     color: #fff;
     box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
   }
 
   .btn.primary:hover {
-    background: var(--accent-hover);
+    background: linear-gradient(135deg, #0051d5 0%, #4640b3 100%);
     box-shadow: 0 4px 16px rgba(0, 122, 255, 0.4);
   }
 
   .btn.primary:active {
-    background: var(--accent-hover);
+    background: linear-gradient(135deg, #0051d5 0%, #4640b3 100%);
     box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
   }
 
@@ -1141,44 +1143,54 @@ function scheduleQtySave(item, newQty){
 // ============================================================
 
 /**
- * アーカイブ一覧を表示
+ * アーカイブ一覧のトグル表示
  * - lastSnapshot.archivedから完了済みアイテムを表示
  * - 各アイテムに「戻す」ボタンを配置
  */
-function showArchive(){
+function toggleArchive(){
   const archiveListEl = document.getElementById('archiveList');
-  archiveListEl.style.display = 'block';
+  const archiveBtn = document.getElementById('archiveBtn');
+  const isVisible = archiveListEl.style.display === 'block';
 
-  // アーカイブアイテムを描画
-  const archived = lastSnapshot.archived || [];
-  let html = '<div style="padding:12px 16px;background:#f9f9f9;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center"><strong>アーカイブ</strong><button class="btn" id="closeArchiveBtn2" style="font-size:12px;padding:6px 12px">閉じる</button></div>';
-
-  if(archived.length === 0){
-    html += '<div style="text-align:center;padding:40px;color:#999">アーカイブされたアイテムはありません</div>';
+  if(isVisible){
+    // 閉じる
+    archiveListEl.style.display = 'none';
+    archiveBtn.textContent = 'アーカイブを見る';
   } else {
-    archived.forEach(item=>{
-      const dateText = formatRelativeTime(item.updatedAt);
-      const qtyText = item.qty ? `<span style="margin-left:8px;padding:2px 8px;background:rgba(0,122,255,0.1);color:#007aff;border-radius:6px;font-size:11px;font-weight:600">${escapeHtml(item.qty)}</span>` : '';
-      html += `<div class="item" style="grid-template-columns:1fr 70px">
-        <div class="item-content">
-          <div class="name">${escapeHtml(item.name)}${qtyText}</div>
-          <div class="date">${dateText}</div>
-        </div>
-        <button class="btn" style="font-size:12px;padding:6px 12px" onclick="restoreItem('${item.itemId}')">戻す</button>
-      </div>`;
-    });
+    // 開く
+    archiveListEl.style.display = 'block';
+    archiveBtn.textContent = 'アーカイブを閉じる';
+
+    // アーカイブアイテムを描画
+    const archived = lastSnapshot.archived || [];
+    let html = '<div class="archive-header" style="padding:12px 16px;background:#f9f9f9;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center"><strong>アーカイブ</strong><button class="btn" id="closeArchiveBtn2" style="font-size:12px;padding:6px 12px">閉じる</button></div>';
+
+    if(archived.length === 0){
+      html += '<div style="text-align:center;padding:40px;color:#999">アーカイブされたアイテムはありません</div>';
+    } else {
+      archived.forEach(item=>{
+        const dateText = formatRelativeTime(item.updatedAt);
+        const qtyText = item.qty ? `<span style="margin-left:8px;padding:2px 8px;background:rgba(0,122,255,0.1);color:#007aff;border-radius:6px;font-size:11px;font-weight:600">${escapeHtml(item.qty)}</span>` : '';
+        html += `<div class="item" style="grid-template-columns:1fr 70px">
+          <div class="item-content">
+            <div class="item-main">
+              <div class="name">${escapeHtml(item.name)}${qtyText}</div>
+            </div>
+            <div class="date">${dateText}</div>
+          </div>
+          <button class="btn" style="font-size:12px;padding:6px 12px" onclick="restoreItem('${item.itemId}')">戻す</button>
+        </div>`;
+      });
+    }
+
+    archiveListEl.innerHTML = html;
+    document.getElementById('closeArchiveBtn2').onclick = toggleArchive;
   }
-
-  archiveListEl.innerHTML = html;
-  document.getElementById('closeArchiveBtn2').onclick = hideArchive;
 }
 
-/**
- * アーカイブを閉じる
- */
-function hideArchive(){
-  document.getElementById('archiveList').style.display = 'none';
-}
+// 後方互換性のために残す
+function showArchive(){ toggleArchive(); }
+function hideArchive(){ toggleArchive(); }
 
 /**
  * アーカイブからアイテムを復元
@@ -1259,8 +1271,8 @@ document.getElementById('loginBtn').onclick = login;
 document.getElementById('passwordInput').addEventListener('keydown', e=>{ if(e.key==='Enter') login(); });
 document.getElementById('addBtn').onclick = add;
 document.getElementById('refreshBtn').onclick = ()=>load(true);
-document.getElementById('archiveBtn').onclick = showArchive;
-document.getElementById('closeArchiveBtn').onclick = hideArchive;
+document.getElementById('archiveBtn').onclick = toggleArchive;
+document.getElementById('closeArchiveBtn').onclick = toggleArchive;
 document.getElementById('undoBtn').onclick = undo;
 document.getElementById('name').addEventListener('keydown', e=>{
   // isComposing=trueは日本語変換中（変換確定のEnterは無視）
