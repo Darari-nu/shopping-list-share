@@ -22,6 +22,7 @@
  * - v4.4 (2025-10-04): アーカイブ一覧にも日時と数量バッジを表示
  * - v5.0 (2025-10-04): デザイン強化（ノイズグラデーション背景、チェックアニメーション、アイテム追加アニメーション、数量バッジのグラデーション、カード3D効果、空状態デザイン）
  * - v5.1 (2025-10-04): アイテム追加アニメーションを新規追加時のみに修正（ポーリング再描画時に動かないように）
+ * - v5.2 (2025-10-04): スマホ1画面最適化（アイテムの高さ圧縮、入力欄折りたたみ式、日付を右上配置、ヘッダー縮小、極小デバイス対応）
  *
  * 技術スタック:
  * - Vanilla JavaScript（フレームワークなし）
@@ -140,6 +141,13 @@
     margin: 0 0 8px 0;
   }
 
+  @media (max-width: 768px) {
+    h1 {
+      font-size: 20px;
+      margin: 0;
+    }
+  }
+
   .muted {
     color: var(--text-secondary);
     font-size: 13px;
@@ -165,6 +173,16 @@
     letter-spacing: -0.3px;
   }
 
+  @media (max-width: 768px) {
+    .statusBar {
+      padding: 10px 16px;
+    }
+
+    .statusBar strong {
+      font-size: 15px;
+    }
+  }
+
   /* ============================================================
    * 入力フィールド
    * ============================================================ */
@@ -173,6 +191,35 @@
     gap: 10px;
     align-items: center;
     margin-top: 0;
+  }
+
+  .addToggleBtn {
+    display: none; /* デスクトップでは非表示 */
+  }
+
+  @media (max-width: 768px) {
+    .addToggleBtn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: 12px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
+      transition: all 0.2s ease;
+    }
+
+    .addToggleBtn:active {
+      transform: scale(0.98);
+    }
+
+    .inputRow.collapsed {
+      display: none;
+    }
   }
 
   input[type=text],
@@ -287,8 +334,17 @@
 
   .item-content {
     display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .item-main {
+    display: flex;
     flex-direction: column;
     gap: 4px;
+    flex: 1;
   }
 
   .item:first-child {
@@ -355,10 +411,18 @@
   }
 
   .date {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 400;
     color: var(--text-tertiary);
     letter-spacing: 0;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 768px) {
+    .date {
+      font-size: 10px;
+    }
   }
 
   /* 空状態のデザイン */
@@ -521,9 +585,9 @@
     /* アイテムリスト */
     .item {
       grid-template-columns: 32px 1fr;
-      padding: 16px;
-      gap: 12px;
-      min-height: 64px; /* タップしやすい高さ */
+      padding: 10px 12px;
+      gap: 10px;
+      min-height: 52px; /* コンパクトに */
     }
 
     .item:active {
@@ -543,16 +607,16 @@
 
     /* 名前・日時 */
     .item-content {
-      gap: 6px;
+      gap: 4px;
+    }
+
+    .item-main {
+      gap: 2px;
     }
 
     .name {
-      font-size: 16px;
-      line-height: 1.4;
-    }
-
-    .date {
-      font-size: 13px;
+      font-size: 14px;
+      line-height: 1.3;
     }
 
     /* 数量入力（スマホでは非表示） */
@@ -625,19 +689,41 @@
     }
   }
 
+  /* アーカイブセクション折りたたみ */
+  @media (max-width: 768px) {
+    #archiveList {
+      border-top: 1px solid var(--line);
+    }
+
+    #archiveList .archive-header {
+      padding: 10px 16px;
+      background: rgba(0, 122, 255, 0.03);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #archiveList .archive-header strong {
+      font-size: 14px;
+    }
+
+    #archiveList .archive-header .btn {
+      font-size: 12px;
+      padding: 6px 12px;
+    }
+  }
+
   /* 極小デバイス（iPhone SE等） */
   @media (max-width: 375px) {
     .item {
-      padding: 14px 12px;
-      gap: 10px;
+      padding: 8px 10px;
+      gap: 8px;
+      min-height: 48px;
     }
 
     .name {
-      font-size: 15px;
-    }
-
-    .date {
-      font-size: 12px;
+      font-size: 13px;
     }
   }
 </style>
@@ -664,7 +750,8 @@
           <div class="muted" id="status">同期OK</div>
         </div>
         <div class="pad">
-          <div class="inputRow">
+          <button class="addToggleBtn" id="addToggleBtn">+ 追加する</button>
+          <div class="inputRow" id="inputRow">
             <input id="name" type="text" placeholder="買いたいもの（例：牛乳）" />
             <input id="qty" type="text" placeholder="数量(任意)" style="max-width:160px" />
             <button class="btn primary" id="addBtn">追加</button>
@@ -676,7 +763,7 @@
         </div>
         <div class="list" id="list"></div>
         <div class="list" id="archiveList" style="display:none;margin-top:16px">
-          <div style="padding:12px 16px;background:#f9f9f9;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center">
+          <div class="archive-header" style="padding:12px 16px;background:#f9f9f9;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center">
             <strong>アーカイブ</strong>
             <button class="btn" id="closeArchiveBtn" style="font-size:12px;padding:6px 12px">閉じる</button>
           </div>
@@ -895,6 +982,7 @@ function render(){
 
     // 名前 + 日時
     const content = document.createElement('div'); content.className='item-content';
+    const main = document.createElement('div'); main.className='item-main';
     const name = document.createElement('div'); name.className='name'; name.textContent = item.name;
     // スマホ表示用：数量がある場合はバッジとして表示
     if(item.qty){
@@ -902,7 +990,8 @@ function render(){
       name.setAttribute('data-qty', item.qty);
     }
     const date = document.createElement('div'); date.className='date'; date.textContent = formatRelativeTime(item.updatedAt);
-    content.appendChild(name);
+    main.appendChild(name);
+    content.appendChild(main);
     content.appendChild(date);
 
     // 数量（一覧で編集）
@@ -953,6 +1042,14 @@ async function add(){
     newItemIds.add(res.itemId);
     undoStack.push({ type:'add', item:{ itemId: res.itemId, name, qty }});
     setUndoEnabled();
+
+    // スマホで入力欄が展開されている場合は閉じる
+    const inputRow = document.getElementById('inputRow');
+    const toggleBtn = document.getElementById('addToggleBtn');
+    if(!inputRow.classList.contains('collapsed') && window.innerWidth <= 768){
+      inputRow.classList.add('collapsed');
+      toggleBtn.textContent = '+ 追加する';
+    }
   }else{
     // 失敗時ロールバック
     pendingAdds.delete(tempId);
@@ -1173,6 +1270,20 @@ document.getElementById('qty').addEventListener('keydown', e=>{
   if(e.key==='Enter' && !e.isComposing) add();
 });
 
+// スマホ用：入力欄の折りたたみトグル
+document.getElementById('addToggleBtn').onclick = function(){
+  const inputRow = document.getElementById('inputRow');
+  const isCollapsed = inputRow.classList.contains('collapsed');
+
+  if(isCollapsed){
+    inputRow.classList.remove('collapsed');
+    this.textContent = '− 閉じる';
+  } else {
+    inputRow.classList.add('collapsed');
+    this.textContent = '+ 追加する';
+  }
+};
+
 // ============================================================
 // 自動ログイン（LocalStorageからパスワード復元）
 // ============================================================
@@ -1183,6 +1294,12 @@ window.addEventListener('load', ()=>{
     document.getElementById('loginScreen').style.display='none';
     document.getElementById('app').style.display='block';
     boot();
+  }
+
+  // スマホの場合、初期状態で入力欄を折りたたむ
+  if(window.innerWidth <= 768){
+    const inputRow = document.getElementById('inputRow');
+    inputRow.classList.add('collapsed');
   }
 });
 </script>
