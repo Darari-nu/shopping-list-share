@@ -26,6 +26,7 @@
  * - v5.3 (2025-10-04): UIブラッシュアップ（全ボタンにグラデーション適用、アーカイブのトグル開閉機能追加）
  * - v6.0 (2025-10-04): デザイン刷新（Apple風ミニマル、モーション設計、WCAG AA準拠、SVGアイコン、PWA対応）
  * - v6.1 (2025-10-04): ダークモード削除（ライトモードのみに統一）
+ * - v7.0 (2025-10-04): UIオーバーホール（ヒーローバナー、白ガラスカード、ピル型入力、タイル+左インジケータ、ピンク×オレンジ配色）
  *
  * 技術スタック:
  * - Vanilla JavaScript（フレームワークなし）
@@ -37,30 +38,24 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="theme-color" content="#007aff" />
+<meta name="theme-color" content="#e52e71" />
 <title>夫婦共有 買い物リスト</title>
 <link rel="manifest" href="/manifest.webmanifest" />
 <style>
   /* ============================================================
-   * カラーパレット（Apple風ミニマル）
+   * カラーパレット（ピンク×オレンジ）
    * ============================================================ */
   :root {
-    --bg-from: #f8fafc;
-    --bg-to: #e2e8f0;
-    --card-bg: rgba(255, 255, 255, 0.9);
-    --card-border: rgba(226, 232, 240, 0.8);
-
+    --accent: #e52e71;
+    --accent-2: #ff8a00;
     --text-primary: #0f172a;
     --text-secondary: #64748b;
     --text-tertiary: #94a3b8;
-
-    --accent: #007aff;
-    --accent-hover: #0051d5;
-    --accent-light: rgba(0, 122, 255, 0.15);
-
-    --line: rgba(226, 232, 240, 0.8);
-    --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-    --shadow-lg: 0 20px 60px rgba(15, 23, 42, 0.12);
+    --line: #e6e8ee;
+    --bg: #f8f9fc;
+    --card-bg: rgba(255, 255, 255, 0.95);
+    --shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+    --shadow-hover: 0 24px 56px rgba(0, 0, 0, 0.24);
   }
 
   /* ============================================================
@@ -76,110 +71,153 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
     line-height: 1.45;
     color: var(--text-primary);
-    background: linear-gradient(135deg, var(--bg-from) 0%, var(--bg-to) 100%);
+    background: var(--bg);
     min-height: 100vh;
-    position: relative;
   }
 
-  /* 超薄ノイズ */
-  body::before {
-    content: '';
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    opacity: 0.02;
-    z-index: -1;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    pointer-events: none;
+  /* ============================================================
+   * ヒーローバナー
+   * ============================================================ */
+  .hero {
+    background: linear-gradient(120deg, var(--accent-2) 0%, var(--accent) 100%);
+    height: 140px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    border-radius: 0 0 28px 28px;
+    box-shadow: 0 8px 24px rgba(229, 46, 113, 0.3);
+  }
+
+  .hero h1 {
+    font-size: 32px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.8px;
+    margin: 0;
+  }
+
+  .hero .subtitle {
+    font-size: 15px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+    margin-top: 4px;
+  }
+
+  .status-chip {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(10px);
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  @media (max-width: 768px) {
+    .hero {
+      height: 120px;
+    }
+    .hero h1 {
+      font-size: 24px;
+    }
+    .hero .subtitle {
+      font-size: 13px;
+    }
   }
 
   /* ============================================================
    * レイアウト
    * ============================================================ */
   .wrap {
-    max-width: 680px;
-    margin: 0 auto;
-    padding: 24px 16px;
+    max-width: 720px;
+    margin: -20px auto 0;
+    padding: 0 16px 100px;
+    position: relative;
   }
 
   .card {
     background: var(--card-bg);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid var(--card-border);
-    border-radius: 20px;
-    box-shadow: var(--shadow);
+    backdrop-filter: blur(18px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 22px;
+    box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.8);
     overflow: hidden;
-    transition: box-shadow 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
   .card:hover {
-    box-shadow: var(--shadow-lg);
+    transform: scale(1.01);
+    box-shadow: var(--shadow-hover);
   }
 
   .pad {
-    padding: 20px;
+    padding: 24px;
   }
 
   /* ============================================================
-   * タイポグラフィ
+   * ピル型入力行
    * ============================================================ */
-  h1 {
-    font-size: 28px;
+  .pill-container {
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 8px 8px 8px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    transition: all 0.2s ease;
+  }
+
+  .pill-container:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 5px rgba(229, 46, 113, 0.15), 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  .pill-container input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 16px;
+    color: var(--text-primary);
+    outline: none;
+    min-width: 0;
+  }
+
+  .pill-container input::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  .addBtnFab {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-2) 0%, var(--accent) 100%);
+    border: none;
+    color: #fff;
+    font-size: 24px;
     font-weight: 700;
-    letter-spacing: -0.5px;
-    margin: 0 0 8px 0;
-  }
-
-  .muted {
-    color: var(--text-secondary);
-    font-size: 13px;
-    font-weight: 500;
-  }
-
-  @media (max-width: 768px) {
-    h1 {
-      font-size: 20px;
-      margin: 0;
-    }
-  }
-
-  /* ============================================================
-   * ステータスバー
-   * ============================================================ */
-  .statusBar {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 16px 20px;
-    background: rgba(255, 255, 255, 0.5);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--line);
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(229, 46, 113, 0.4);
+    transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    flex-shrink: 0;
   }
 
-  .statusBar strong {
-    font-size: 17px;
-    font-weight: 600;
-    letter-spacing: -0.3px;
+  .addBtnFab:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(229, 46, 113, 0.5);
   }
 
-  @media (max-width: 768px) {
-    .statusBar {
-      padding: 10px 16px;
-    }
-    .statusBar strong {
-      font-size: 15px;
-    }
-  }
-
-  /* ============================================================
-   * 入力フィールド
-   * ============================================================ */
-  .inputRow {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    margin-top: 0;
+  .addBtnFab:active {
+    transform: scale(0.98);
   }
 
   .addToggleBtn {
@@ -188,141 +226,81 @@
 
   @media (max-width: 768px) {
     .addToggleBtn {
-      display: inline-flex;
+      display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      gap: 8px;
       width: 100%;
-      padding: 14px;
+      padding: 16px;
       font-size: 16px;
-      font-weight: 600;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+      font-weight: 700;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--accent-2) 0%, var(--accent) 100%);
       color: #fff;
       border: none;
       cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
-      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(229, 46, 113, 0.4);
+      margin-bottom: 12px;
     }
 
     .addToggleBtn:active {
       transform: scale(0.98);
-      background: linear-gradient(135deg, #0051d5 0%, #4640b3 100%);
     }
 
-    .inputRow.collapsed {
+    .pill-container.collapsed {
       display: none;
     }
-  }
 
-  label {
-    display: block;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-secondary);
-    margin-bottom: 4px;
-  }
+    .pill-container {
+      flex-wrap: wrap;
+      padding: 12px;
+    }
 
-  input[type=text],
-  input[type=password] {
-    flex: 1;
-    font-size: 17px;
-    font-weight: 400;
-    padding: 14px 16px;
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    background: var(--card-bg);
-    color: var(--text-primary);
-    transition: all 0.2s ease;
-  }
+    .pill-container input {
+      width: 100%;
+      margin-bottom: 8px;
+    }
 
-  input[type=text]::placeholder,
-  input[type=password]::placeholder {
-    color: var(--text-tertiary);
-    font-size: 15px;
-  }
-
-  input[type=text]:focus,
-  input[type=password]:focus {
-    outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 4px var(--accent-light);
+    .addBtnFab {
+      width: 100%;
+      border-radius: 12px;
+      height: 52px;
+    }
   }
 
   /* ============================================================
-   * ボタン（Apple風 + SVGアイコン）
-   * ============================================================ */
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 12px 20px;
-    font-size: 15px;
-    font-weight: 600;
-    border: none;
-    border-radius: 12px;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(245, 245, 250, 0.95) 100%);
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    letter-spacing: -0.2px;
-  }
-
-  .btn:hover {
-    background: linear-gradient(135deg, #fff 0%, #f5f5fa 100%);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-    transform: translateY(-2px);
-  }
-
-  .btn:active {
-    transform: scale(0.98);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-  }
-
-  .btn.primary {
-    background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
-    color: #fff;
-    box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
-  }
-
-  .btn.primary:hover {
-    background: linear-gradient(135deg, #0051d5 0%, #4640b3 100%);
-    box-shadow: 0 4px 16px rgba(0, 122, 255, 0.4);
-  }
-
-  .btn.primary:active {
-    background: linear-gradient(135deg, #0051d5 0%, #4640b3 100%);
-    box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
-  }
-
-  .btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none !important;
-  }
-
-  .btn svg {
-    width: 18px;
-    height: 18px;
-  }
-
-  /* ============================================================
-   * アイテムリスト
+   * アイテムリスト（タイル + 左インジケータ）
    * ============================================================ */
   .list {
     margin-top: 0;
   }
 
   .item {
+    position: relative;
     display: grid;
     grid-template-columns: 32px 1fr 100px;
     gap: 12px;
     align-items: center;
-    padding: 16px 20px;
+    padding: 16px 20px 16px 24px;
     border-top: 1px solid var(--line);
-    transition: opacity 0.18s ease, transform 0.18s ease, background 0.2s ease;
+    transition: opacity 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.2s ease;
+  }
+
+  .item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--accent);
+    border-radius: 0 2px 2px 0;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .item:hover::before {
+    opacity: 1;
   }
 
   .item:first-child {
@@ -330,12 +308,12 @@
   }
 
   .item:hover {
-    background: var(--accent-light);
+    background: rgba(229, 46, 113, 0.04);
   }
 
   /* 新規追加アイテムのみアニメーション */
   .item.item-new {
-    animation: slideInFromTop 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slideInFromTop 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
   @keyframes slideInFromTop {
@@ -379,28 +357,28 @@
     flex: 1;
   }
 
-  /* カスタムチェックボックス */
+  /* 角丸スクエアチェックボックス */
   .item input[type=checkbox] {
     width: 24px;
     height: 24px;
-    border: 2px solid #c8c8cc;
-    border-radius: 50%;
+    border: 2.5px solid #cbd5e1;
+    border-radius: 10px;
     appearance: none;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
     position: relative;
   }
 
   .item input[type=checkbox]:hover {
     border-color: var(--accent);
-    transform: scale(1.15);
-    box-shadow: 0 0 0 4px var(--accent-light);
+    transform: scale(1.1);
+    box-shadow: 0 0 0 4px rgba(229, 46, 113, 0.15);
   }
 
   .item input[type=checkbox]:checked {
-    background: var(--accent);
+    background: linear-gradient(135deg, var(--accent-2) 0%, var(--accent) 100%);
     border-color: var(--accent);
-    animation: checkBounce 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    animation: checkRipple 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
   .item input[type=checkbox]:checked::after {
@@ -412,12 +390,12 @@
     color: #fff;
     font-size: 14px;
     font-weight: bold;
-    animation: checkMark 0.3s 0.1s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+    animation: checkMark 0.2s 0.1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
   }
 
-  @keyframes checkBounce {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.2); }
+  @keyframes checkRipple {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(229, 46, 113, 0.4); }
+    50% { transform: scale(1.15); box-shadow: 0 0 0 8px rgba(229, 46, 113, 0); }
     100% { transform: scale(1); }
   }
 
@@ -427,26 +405,20 @@
 
   .name {
     font-size: 17px;
-    font-weight: 500;
+    font-weight: 600;
     line-height: 1.3;
     word-break: break-word;
     color: var(--text-primary);
-    letter-spacing: -0.2px;
+    letter-spacing: -0.3px;
   }
 
   .date {
     font-size: 11px;
-    font-weight: 400;
+    font-weight: 500;
     color: var(--text-tertiary);
     letter-spacing: 0;
     white-space: nowrap;
     flex-shrink: 0;
-  }
-
-  @media (max-width: 768px) {
-    .date {
-      font-size: 10px;
-    }
   }
 
   /* 空状態 */
@@ -480,8 +452,8 @@
     font-size: 15px;
     text-align: center;
     border: 1px solid var(--line);
-    border-radius: 8px;
-    background: var(--card-bg);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.8);
     color: var(--text-primary);
     transition: all 0.2s ease;
   }
@@ -489,7 +461,22 @@
   .qtyInput:focus {
     outline: none;
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-light);
+    box-shadow: 0 0 0 4px rgba(229, 46, 113, 0.15);
+  }
+
+  /* 数量バッジ */
+  .name.has-qty::after {
+    content: attr(data-qty);
+    display: inline-block;
+    margin-left: 8px;
+    padding: 4px 10px;
+    background: linear-gradient(135deg, rgba(255, 138, 0, 0.12) 0%, rgba(229, 46, 113, 0.12) 100%);
+    color: var(--accent);
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    border: 1px solid rgba(229, 46, 113, 0.2);
   }
 
   /* ============================================================
@@ -506,8 +493,60 @@
   }
 
   .fab .btn {
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
     backdrop-filter: blur(10px);
+  }
+
+  /* ============================================================
+   * ボタン
+   * ============================================================ */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 12px 20px;
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(245, 245, 250, 0.95) 100%);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    letter-spacing: -0.2px;
+  }
+
+  .btn:hover {
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+  }
+
+  .btn:active {
+    transform: scale(0.98);
+  }
+
+  .btn.primary {
+    background: linear-gradient(135deg, var(--accent-2) 0%, var(--accent) 100%);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(229, 46, 113, 0.4);
+  }
+
+  .btn.primary:hover {
+    box-shadow: 0 6px 16px rgba(229, 46, 113, 0.5);
+  }
+
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+
+  .btn svg {
+    width: 18px;
+    height: 18px;
   }
 
   /* ============================================================
@@ -522,10 +561,10 @@
     backdrop-filter: blur(20px);
     color: #fff;
     padding: 12px 20px;
-    border-radius: 16px;
+    border-radius: 999px;
     display: none;
     font-size: 15px;
-    font-weight: 500;
+    font-weight: 600;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
     letter-spacing: -0.2px;
     opacity: 0;
@@ -543,14 +582,62 @@
   .login {
     max-width: 420px;
     margin: 60px auto;
+    padding: 0 16px;
+  }
+
+  .login .card {
+    padding: 32px;
+  }
+
+  .login h1 {
+    font-size: 28px;
+    font-weight: 800;
+    background: linear-gradient(120deg, var(--accent-2) 0%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+  }
+
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+
+  input[type=text],
+  input[type=password] {
+    width: 100%;
+    font-size: 16px;
+    font-weight: 400;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.8);
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+  }
+
+  input[type=text]::placeholder,
+  input[type=password]::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  input[type=text]:focus,
+  input[type=password]:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 5px rgba(229, 46, 113, 0.15);
   }
 
   /* ============================================================
    * アーカイブパネル
    * ============================================================ */
   .archive-header {
-    padding: 12px 16px;
-    background: rgba(248, 250, 252, 0.8);
+    padding: 14px 20px;
+    background: rgba(248, 250, 252, 0.9);
     border-bottom: 1px solid var(--line);
     display: flex;
     justify-content: space-between;
@@ -558,19 +645,50 @@
     position: sticky;
     top: 0;
     z-index: 10;
+    backdrop-filter: blur(10px);
   }
 
   .archive-header strong {
-    font-size: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
   }
 
-  .archive-header .btn {
+  .archive-badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 3px 10px;
+    background: linear-gradient(135deg, rgba(255, 138, 0, 0.15) 0%, rgba(229, 46, 113, 0.15) 100%);
+    color: var(--accent);
+    border-radius: 999px;
     font-size: 12px;
-    padding: 6px 12px;
+    font-weight: 700;
   }
 
   #archiveList {
     border-top: 1px solid var(--line);
+    margin-top: 16px;
+  }
+
+  #archInfo {
+    margin-top: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  #archiveBtn {
+    background: rgba(229, 46, 113, 0.08);
+    color: var(--accent);
+    border: 1px solid rgba(229, 46, 113, 0.2);
+    padding: 8px 16px;
+    font-size: 13px;
+    border-radius: 999px;
+  }
+
+  #archiveBtn:hover {
+    background: rgba(229, 46, 113, 0.12);
+    transform: translateY(-1px);
   }
 
   /* ============================================================
@@ -578,114 +696,26 @@
    * ============================================================ */
   @media (max-width: 768px) {
     .wrap {
-      padding: 12px;
-      padding-bottom: 100px;
-    }
-
-    .card {
-      border-radius: 16px;
-    }
-
-    .pad {
-      padding: 16px;
-    }
-
-    .statusBar {
-      padding: 14px 16px;
-      flex-wrap: wrap;
-      gap: 4px;
-    }
-
-    .statusBar strong {
-      font-size: 16px;
-      width: 100%;
-    }
-
-    .statusBar .muted {
-      font-size: 12px;
-    }
-
-    .inputRow {
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    input[type=text],
-    input[type=password] {
-      width: 100%;
-      font-size: 16px;
-      padding: 14px 16px;
-    }
-
-    .btn.primary {
-      width: 100%;
-      padding: 14px 20px;
-      font-size: 16px;
-    }
-
-    #archInfo {
-      flex-direction: column;
-      align-items: flex-start !important;
-      gap: 8px;
-    }
-
-    #archiveBtn {
-      align-self: stretch;
-      padding: 10px 16px !important;
-      font-size: 14px !important;
+      padding-bottom: 120px;
     }
 
     .item {
       grid-template-columns: 32px 1fr;
-      padding: 10px 12px;
-      gap: 10px;
-      min-height: 52px;
-    }
-
-    .item:active {
-      background: var(--accent-light);
+      padding: 12px 16px 12px 20px;
+      min-height: 56px;
     }
 
     .item input[type=checkbox] {
       width: 28px;
       height: 28px;
-      border-width: 2.5px;
-    }
-
-    .item input[type=checkbox]::after {
-      font-size: 16px;
-    }
-
-    .item-content {
-      gap: 4px;
-    }
-
-    .item-main {
-      gap: 2px;
     }
 
     .name {
-      font-size: 14px;
-      line-height: 1.3;
+      font-size: 15px;
     }
 
     .qtyInput {
       display: none;
-    }
-
-    .name.has-qty::after {
-      content: attr(data-qty);
-      display: inline-block;
-      margin-left: 8px;
-      padding: 3px 10px;
-      background: linear-gradient(135deg, rgba(0, 122, 255, 0.15) 0%, rgba(0, 122, 255, 0.08) 100%);
-      color: var(--accent);
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.3px;
-      border: 1px solid rgba(0, 122, 255, 0.2);
-      box-shadow: 0 2px 4px rgba(0, 122, 255, 0.1);
     }
 
     .fab {
@@ -701,7 +731,6 @@
       border-radius: 16px;
       padding: 0 20px;
       font-size: 14px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
     }
 
     .snack {
@@ -710,98 +739,88 @@
       font-size: 14px;
     }
 
-    .login {
-      margin: 40px auto;
-      padding: 0 16px;
+    #archInfo {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
     }
 
-    .login .card {
-      border-radius: 16px;
-    }
-
-    .login h1 {
-      font-size: 24px;
-    }
-
-    .login input[type=password] {
-      font-size: 16px;
-    }
-
-    .login .btn {
-      font-size: 16px;
-      padding: 14px 20px;
+    #archiveBtn {
+      width: 100%;
+      justify-content: center;
     }
   }
 
   @media (max-width: 375px) {
     .item {
-      padding: 8px 10px;
-      gap: 8px;
-      min-height: 48px;
+      padding: 10px 12px 10px 16px;
+      min-height: 52px;
     }
 
     .name {
-      font-size: 13px;
+      font-size: 14px;
     }
   }
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <!-- ログイン -->
-    <div id="loginScreen" class="login">
-      <div class="card pad">
-        <h1>買い物リスト</h1>
-        <div style="margin-top: 16px;">
-          <label for="passwordInput">パスワード</label>
-          <div class="inputRow">
-            <input type="password" id="passwordInput" placeholder="パスワードを入力" aria-label="パスワード">
-            <button class="btn primary" id="loginBtn" aria-label="ログイン">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3"/></svg>
-              ログイン
-            </button>
-          </div>
-        </div>
-        <div id="loginError" class="muted" style="color:#d00;margin-top:8px;display:none;"></div>
+  <!-- ログイン画面 -->
+  <div id="loginScreen" class="login">
+    <div class="card">
+      <h1>買い物リスト</h1>
+      <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 24px;">買い物を、気持ちよく。</p>
+      <div style="margin-bottom: 16px;">
+        <label for="passwordInput">パスワード</label>
+        <input type="password" id="passwordInput" placeholder="パスワードを入力" aria-label="パスワード">
       </div>
+      <button class="btn primary" id="loginBtn" aria-label="ログイン" style="width: 100%;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3"/></svg>
+        ログイン
+      </button>
+      <div id="loginError" style="color:#d00;margin-top:12px;display:none;font-size:14px;"></div>
+    </div>
+  </div>
+
+  <!-- 本体 -->
+  <div id="app" style="display:none;">
+    <!-- ヒーローバナー -->
+    <div class="hero">
+      <h1>買い物リスト</h1>
+      <div class="subtitle">買い物を、気持ちよく。</div>
+      <div class="status-chip" id="status">同期OK</div>
     </div>
 
-    <!-- 本体 -->
-    <div id="app" style="display:none;">
+    <div class="wrap">
       <div class="card">
-        <div class="statusBar">
-          <div><strong>夫婦共有 買い物リスト</strong></div>
-          <div class="muted" id="status">同期OK</div>
-        </div>
         <div class="pad">
+          <!-- スマホ用トグルボタン -->
           <button class="addToggleBtn" id="addToggleBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
             追加する
           </button>
-          <div class="inputRow" id="inputRow">
-            <div style="flex: 1;">
-              <label for="name">アイテム名</label>
-              <input id="name" type="text" placeholder="買いたいもの（例：牛乳）" aria-label="アイテム名" />
-            </div>
-            <div style="max-width: 160px;">
-              <label for="qty">数量（任意）</label>
-              <input id="qty" type="text" placeholder="数量" aria-label="数量" />
-            </div>
-            <button class="btn primary" id="addBtn" aria-label="追加" style="margin-top: 20px;">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-              追加
-            </button>
+
+          <!-- ピル型入力 -->
+          <div class="pill-container" id="inputRow">
+            <input id="name" type="text" placeholder="買いたいもの（例：牛乳）" aria-label="アイテム名" />
+            <input id="qty" type="text" placeholder="数量" aria-label="数量" style="max-width: 80px;" />
+            <button class="addBtnFab" id="addBtn" aria-label="追加">+</button>
           </div>
-          <div class="muted" id="archInfo" style="margin-top:8px;display:flex;justify-content:space-between;align-items:center">
-            <span id="archCount"></span>
-            <button class="btn" id="archiveBtn" style="font-size:12px;padding:6px 12px" aria-label="アーカイブを見る">
+
+          <!-- アーカイブ情報 -->
+          <div id="archInfo">
+            <span style="font-size: 13px; color: var(--text-secondary);" id="archCount"></span>
+            <button class="btn" id="archiveBtn" aria-label="アーカイブを見る">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
               アーカイブを見る
             </button>
           </div>
         </div>
+
+        <!-- アイテムリスト -->
         <div class="list" id="list"></div>
-        <div class="list" id="archiveList" style="display:none;margin-top:16px"></div>
+
+        <!-- アーカイブリスト -->
+        <div id="archiveList" style="display:none;"></div>
       </div>
     </div>
   </div>
@@ -825,19 +844,10 @@
 // グローバル設定・変数
 // ============================================================
 
-/**
- * 設定値（デプロイ時に変更必須）
- * - GAS_URL: Google Apps ScriptのWebアプリURL（/exec）
- * - HOUSEHOLD: 世帯ID（スプレッドシートのsettings!B3と一致）
- * - POLL_MS: ポーリング間隔（ミリ秒）
- */
 const GAS_URL   = 'https://script.google.com/macros/s/AKfycbxHIkijpQDUYqJ7aqPdHn9bTf3yMXemn5j0aqj5j_P2hTc9BvG1UNg0Y1Vdwpti1Gw0Aw/exec';
 const HOUSEHOLD = 'home01';
 const POLL_MS   = 1000;
 
-/**
- * アプリケーション状態
- */
 let password = null;
 let lastSnapshot = { items: [], archived: [] };
 let undoStack = [];
@@ -935,7 +945,7 @@ async function load(first=false){
     document.getElementById('archCount').textContent = `アーカイブ: ${lastSnapshot.archived.length} 件`;
     setStatus('同期OK');
   } else {
-    setStatus('オフライン表示');
+    setStatus('オフライン');
     const cache = localStorage.getItem('snapshot');
     if(cache){ lastSnapshot = JSON.parse(cache); render(); }
   }
@@ -1043,9 +1053,12 @@ async function add(){
 
     const inputRow = document.getElementById('inputRow');
     const toggleBtn = document.getElementById('addToggleBtn');
-    if(!inputRow.classList.contains('collapsed') && window.innerWidth <= 768){
+    if(inputRow.classList.contains('collapsed') && window.innerWidth <= 768){
+      inputRow.classList.remove('collapsed');
+      toggleBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg> 閉じる';
+    } else if(window.innerWidth <= 768){
       inputRow.classList.add('collapsed');
-      toggleBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> 追加する';
+      toggleBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg> 追加する';
     }
   }else{
     pendingAdds.delete(tempId);
@@ -1111,22 +1124,22 @@ function toggleArchive(){
     archiveBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg> アーカイブを閉じる';
 
     const archived = lastSnapshot.archived || [];
-    let html = `<div class="archive-header"><strong>アーカイブ (${archived.length}件)</strong><button class="btn" id="closeArchiveBtn2" aria-label="閉じる">閉じる</button></div>`;
+    let html = `<div class="archive-header"><strong>アーカイブ <span class="archive-badge">${archived.length}</span></strong><button class="btn" id="closeArchiveBtn2" aria-label="閉じる" style="font-size:12px;padding:6px 12px;">閉じる</button></div>`;
 
     if(archived.length === 0){
       html += '<div style="text-align:center;padding:40px;color:var(--text-tertiary)">アーカイブされたアイテムはありません</div>';
     } else {
       archived.forEach(item=>{
         const dateText = formatRelativeTime(item.updatedAt);
-        const qtyText = item.qty ? `<span style="margin-left:8px;padding:2px 8px;background:rgba(0,122,255,0.1);color:var(--accent);border-radius:6px;font-size:11px;font-weight:600">${escapeHtml(item.qty)}</span>` : '';
-        html += `<div class="item" style="grid-template-columns:1fr 70px">
+        const qtyBadge = item.qty ? `<span style="margin-left:8px;padding:3px 10px;background:linear-gradient(135deg, rgba(255, 138, 0, 0.12) 0%, rgba(229, 46, 113, 0.12) 100%);color:var(--accent);border-radius:8px;font-size:11px;font-weight:700;border:1px solid rgba(229,46,113,0.2)">${escapeHtml(item.qty)}</span>` : '';
+        html += `<div class="item" style="grid-template-columns:1fr auto">
           <div class="item-content">
             <div class="item-main">
-              <div class="name">${escapeHtml(item.name)}${qtyText}</div>
+              <div class="name">${escapeHtml(item.name)}${qtyBadge}</div>
             </div>
             <div class="date">${dateText}</div>
           </div>
-          <button class="btn" style="font-size:12px;padding:6px 12px" onclick="restoreItem('${item.itemId}')" aria-label="${escapeHtml(item.name)}を復元">戻す</button>
+          <button class="btn" style="font-size:12px;padding:6px 12px;" onclick="restoreItem('${item.itemId}')" aria-label="${escapeHtml(item.name)}を復元">戻す</button>
         </div>`;
       });
     }
@@ -1210,10 +1223,10 @@ document.getElementById('addToggleBtn').onclick = function(){
 
   if(isCollapsed){
     inputRow.classList.remove('collapsed');
-    this.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg> 閉じる';
+    this.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg> 閉じる';
   } else {
     inputRow.classList.add('collapsed');
-    this.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> 追加する';
+    this.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg> 追加する';
   }
 };
 
@@ -1234,16 +1247,6 @@ window.addEventListener('load', ()=>{
     inputRow.classList.add('collapsed');
   }
 });
-
-// ============================================================
-// PWA対応（任意：beforeinstallprompt）
-// ============================================================
-// let deferredPrompt;
-// window.addEventListener('beforeinstallprompt', (e) => {
-//   e.preventDefault();
-//   deferredPrompt = e;
-//   // 小さなバナーを表示する場合はここに実装
-// });
 </script>
 </body>
 </html>
