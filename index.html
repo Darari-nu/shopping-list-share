@@ -70,6 +70,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <!-- Favicon -->
+<link rel="icon" href="/icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
 
@@ -980,8 +981,8 @@ function stopLoading(btn){
 // ============================================================
 
 function apiGet(action, params={}){
-  const qs = new URLSearchParams({ action, household: HOUSEHOLD, ...params }).toString();
-  return fetch(`${GAS_URL}?${qs}`).then(r=>r.text()).then(safeJSON);
+  const qs = new URLSearchParams({ action, household: HOUSEHOLD, ...params, _: Date.now() }).toString();
+  return fetch(`${GAS_URL}?${qs}`, { cache: 'no-store' }).then(r=>r.text()).then(safeJSON);
 }
 
 function apiPost(action, body={}){
@@ -1024,8 +1025,8 @@ function boot(){
 // データ読み込み
 // ============================================================
 
-async function load(force=false){
-  if(isLoading && !force) return; // 前回のリクエストがまだ実行中かつ強制実行でない場合は中断
+async function load(first=false){
+  if(isLoading) return; // 前回のリクエストがまだ実行中なら中断
 
   isLoading = true;
   try {
