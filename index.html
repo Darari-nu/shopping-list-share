@@ -1170,15 +1170,8 @@ async function add(){
     undoStack.push({ type:'add', item:{ itemId: res.itemId, name, qty }});
     setUndoEnabled();
 
-    const inputRow = document.getElementById('inputRow');
-    const toggleBtn = document.getElementById('addToggleBtn');
-    if(inputRow.classList.contains('collapsed') && window.innerWidth <= 768){
-      inputRow.classList.remove('collapsed');
-      toggleBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg> 閉じる';
-    } else if(window.innerWidth <= 768){
-      inputRow.classList.add('collapsed');
-      toggleBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg> 追加する';
-    }
+    // 入力欄は開いたまま（連続入力のため）
+    nameEl.focus(); // 名前欄にフォーカス戻す
   }else{
     pendingAdds.delete(tempId);
     lastSnapshot.items = lastSnapshot.items.filter(x=>x.itemId!==tempId);
