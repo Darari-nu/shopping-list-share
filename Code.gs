@@ -14,6 +14,7 @@
  * - v4.0 (2025-10-04): toggleItem()のパフォーマンス改善（setValue×3 → setValues×1で3倍高速化）
  * - v4.1 (2025-10-04): パフォーマンス改善（updateItemの一括更新、軽量認証エンドポイント追加）
  * - v5.0 (2025-10-04): 大幅パフォーマンス改善（getLastRow使用、CacheService導入、全関数最適化）
+ * - v5.1 (2025-10-04): CacheServiceを一時的にオフ（表示遅延問題の調査のため）
  *
  * データ構造:
  * - items シート: 買い物アイテムの保存（未完了/完了の両方）
@@ -197,13 +198,14 @@ function settingsMap() {
  * @return {Object} {ok, items, archived, archivedCount}
  */
 function listItems(household) {
-  const cache = CacheService.getScriptCache();
-  const cacheKey = 'list_' + household;
-  const cached = cache.get(cacheKey);
+  // キャッシュを一時的にオフ（デバッグ用）
+  // const cache = CacheService.getScriptCache();
+  // const cacheKey = 'list_' + household;
+  // const cached = cache.get(cacheKey);
 
-  if (cached) {
-    return JSON.parse(cached);
-  }
+  // if (cached) {
+  //   return JSON.parse(cached);
+  // }
 
   const sheet = itemsSheet();
   const lastRow = sheet.getLastRow();
@@ -243,19 +245,19 @@ function listItems(household) {
 
   const result = { ok: true, items: items, archived: archived, archivedCount: archived.length };
 
-  // 3秒間キャッシュ
-  cache.put(cacheKey, JSON.stringify(result), 3);
+  // キャッシュを一時的にオフ
+  // cache.put(cacheKey, JSON.stringify(result), 3);
 
   return result;
 }
 
 /**
- * キャッシュ無効化
+ * キャッシュ無効化（一時的にオフ）
  * @param {string} household - 世帯ID
  */
 function invalidateCache(household) {
-  const cache = CacheService.getScriptCache();
-  cache.remove('list_' + household);
+  // const cache = CacheService.getScriptCache();
+  // cache.remove('list_' + household);
 }
 
 /**

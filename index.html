@@ -36,6 +36,7 @@
  * - v8.0 (2025-10-04): ローディングスピナー実装（GAS処理中のくるくる表示、誤タップ防止）
  * - v8.1 (2025-10-04): パフォーマンス改善（ポーリング重複防止、軽量認証、qtyTimerクリーンアップ）
  * - v8.2 (2025-10-04): アーカイブ操作後の表示更新を修正（削除/復元後に最新データで再描画）
+ * - v8.3 (2025-10-04): アーカイブ操作を楽観的更新に変更（削除/復元を即座に反映）
  *
  * 技術スタック:
  * - Vanilla JavaScript（フレームワークなし）
@@ -1283,21 +1284,36 @@ async function restoreItem(itemId, event){
   const btn = event.target;
   startLoading(btn);
 
+  // 楽観的更新: UIを先に更新
+  const item = lastSnapshot.archived.find(x => x.itemId === itemId);
+  if(!item) {
+    stopLoading(btn);
+    toast('アイテムが見つかりません');
+    return;
+  }
+
+  lastSnapshot.archived = lastSnapshot.archived.filter(x => x.itemId !== itemId);
+  const wasOpen = document.getElementById('archiveList').style.display === 'block';
+  if(wasOpen){
+    toggleArchive();
+    toggleArchive();
+  }
+
   const res = await apiPost('toggle', { itemId, done:false });
 
   stopLoading(btn);
 
   if(res && res.ok){
-    const wasOpen = document.getElementById('archiveList').style.display === 'block';
-    if(wasOpen){
-      toggleArchive(); // 一旦閉じる
-    }
     await load();
     toast('元に戻しました');
-    if(wasOpen){
-      toggleArchive(); // 再度開く（最新データで）
-    }
   } else {
+    // ロールバック
+    lastSnapshot.archived.push(item);
+    lastSnapshot.archived.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    if(wasOpen){
+      toggleArchive();
+      toggleArchive();
+    }
     toast('元に戻せませんでした');
   }
 }
@@ -1314,21 +1330,36 @@ async function deleteArchivedItem(itemId, event){
     delete qtyTimer[itemId];
   }
 
+  // 楽観的更新: UIを先に更新
+  const item = lastSnapshot.archived.find(x => x.itemId === itemId);
+  if(!item) {
+    stopLoading(btn);
+    toast('アイテムが見つかりません');
+    return;
+  }
+
+  lastSnapshot.archived = lastSnapshot.archived.filter(x => x.itemId !== itemId);
+  const wasOpen = document.getElementById('archiveList').style.display === 'block';
+  if(wasOpen){
+    toggleArchive();
+    toggleArchive();
+  }
+
   const res = await apiPost('delete', { itemId });
 
   stopLoading(btn);
 
   if(res && res.ok){
-    const wasOpen = document.getElementById('archiveList').style.display === 'block';
-    if(wasOpen){
-      toggleArchive(); // 一旦閉じる
-    }
     await load();
     toast('削除しました');
-    if(wasOpen){
-      toggleArchive(); // 再度開く（最新データで）
-    }
   } else {
+    // ロールバック
+    lastSnapshot.archived.push(item);
+    lastSnapshot.archived.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    if(wasOpen){
+      toggleArchive();
+      toggleArchive();
+    }
     toast('削除できませんでした');
   }
 }
