@@ -32,6 +32,7 @@
  * - v7.3 (2025-10-04): OGP画像追加（猫ちゃん画像を軽量化：1.4MB→206KB）
  * - v7.4 (2025-10-04): PWAアイコンを猫ちゃん🐱に変更（ホーム画面追加時のアイコン）
  * - v7.5 (2025-10-04): apple-touch-icon追加（iOS Safari対応）
+ * - v7.6 (2025-10-04): アーカイブに削除ボタン追加、アーカイブヘッダーの背景色変更（青緑グラデーション）
  *
  * 技術スタック:
  * - Vanilla JavaScript（フレームワークなし）
@@ -664,7 +665,7 @@
    * ============================================================ */
   .archive-header {
     padding: 14px 20px;
-    background: rgba(248, 250, 252, 0.9);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%);
     border-bottom: 1px solid var(--line);
     display: flex;
     justify-content: space-between;
@@ -1159,7 +1160,7 @@ function toggleArchive(){
       archived.forEach(item=>{
         const dateText = formatRelativeTime(item.updatedAt);
         const qtyBadge = item.qty ? `<span style="margin-left:8px;padding:3px 10px;background:linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(16, 185, 129, 0.12) 100%);color:var(--accent);border-radius:8px;font-size:11px;font-weight:700;border:1px solid rgba(16,185,129,0.2)">${escapeHtml(item.qty)}</span>` : '';
-        html += `<div class="item" style="grid-template-columns:1fr auto">
+        html += `<div class="item" style="grid-template-columns:1fr auto auto">
           <div class="item-content">
             <div class="item-main">
               <div class="name">${escapeHtml(item.name)}${qtyBadge}</div>
@@ -1167,6 +1168,7 @@ function toggleArchive(){
             <div class="date">${dateText}</div>
           </div>
           <button class="btn" style="font-size:12px;padding:6px 12px;" onclick="restoreItem('${item.itemId}')" aria-label="${escapeHtml(item.name)}を復元">戻す</button>
+          <button class="btn" style="font-size:12px;padding:6px 12px;color:#ef4444;" onclick="deleteArchivedItem('${item.itemId}')" aria-label="${escapeHtml(item.name)}を削除">削除</button>
         </div>`;
       });
     }
@@ -1186,6 +1188,21 @@ async function restoreItem(itemId){
     toast('元に戻しました');
   } else {
     toast('元に戻せませんでした');
+  }
+}
+
+async function deleteArchivedItem(itemId){
+  const res = await apiPost('delete', { itemId });
+  if(res && res.ok){
+    await load();
+    toast('削除しました');
+    // アーカイブが開いている場合は再描画
+    if(document.getElementById('archiveList').style.display === 'block'){
+      toggleArchive();
+      toggleArchive();
+    }
+  } else {
+    toast('削除できませんでした');
   }
 }
 
