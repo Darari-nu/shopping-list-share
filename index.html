@@ -33,6 +33,7 @@
  * - v7.4 (2025-10-04): PWAアイコンを猫ちゃん🐱に変更（ホーム画面追加時のアイコン）
  * - v7.5 (2025-10-04): apple-touch-icon追加（iOS Safari対応）
  * - v7.6 (2025-10-04): アーカイブに削除ボタン追加、アーカイブヘッダーの背景色変更（青緑グラデーション）
+ * - v8.0 (2025-10-04): ローディングスピナー実装（GAS処理中のくるくる表示、誤タップ防止）
  *
  * 技術スタック:
  * - Vanilla JavaScript（フレームワークなし）
@@ -572,6 +573,43 @@
     transform: none !important;
   }
 
+  /* ローディング状態 */
+  .btn.loading {
+    opacity: 0.7;
+    pointer-events: none;
+  }
+
+  .btn.loading::before {
+    content: '';
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+
+  .btn:not(.primary).loading::before {
+    border-color: rgba(0, 0, 0, 0.2);
+    border-top-color: var(--text-primary);
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* 処理中は全体を無効化 */
+  body.processing * {
+    pointer-events: none;
+  }
+
+  body.processing .btn.loading {
+    pointer-events: auto;
+  }
+
   .btn svg {
     width: 18px;
     height: 18px;
@@ -890,6 +928,7 @@ let pollTimer = null;
 let pendingAdds = new Set();
 let pendingCompletes = new Set();
 let newItemIds = new Set();
+let isProcessing = false;
 
 // ============================================================
 // ユーティリティ関数
@@ -911,6 +950,22 @@ function setStatus(msg){ document.getElementById('status').textContent = msg; }
 function escapeHtml(s){ return s.replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
 function setUndoEnabled(){ document.getElementById('undoBtn').disabled = undoStack.length === 0; }
+
+function startLoading(btn){
+  if(!btn) return;
+  isProcessing = true;
+  btn.classList.add('loading');
+  btn.disabled = true;
+  document.body.classList.add('processing');
+}
+
+function stopLoading(btn){
+  if(!btn) return;
+  isProcessing = false;
+  btn.classList.remove('loading');
+  btn.disabled = false;
+  document.body.classList.remove('processing');
+}
 
 // ============================================================
 // API通信（重要: Content-Typeヘッダは付けない）
@@ -1066,11 +1121,16 @@ function scheduleQtySave(item, newQty){
 }
 
 async function add(){
+  if(isProcessing) return;
+
   const nameEl = document.getElementById('name');
   const qtyEl = document.getElementById('qty');
   const name = nameEl.value.trim();
   const qty = qtyEl.value.trim();
   if(!name) return;
+
+  const addBtn = document.getElementById('addBtn');
+  startLoading(addBtn);
 
   const tempId = 'tmp-'+Math.random().toString(36).slice(2);
   pendingAdds.add(tempId);
@@ -1079,6 +1139,9 @@ async function add(){
   nameEl.value=''; qtyEl.value='';
 
   const res = await apiPost('add', { name, qty });
+
+  stopLoading(addBtn);
+
   if(res && res.ok){
     pendingAdds.delete(tempId);
     lastSnapshot.items = lastSnapshot.items.filter(x=>x.itemId!==tempId);
@@ -1104,6 +1167,11 @@ async function add(){
 }
 
 async function complete(item){
+  if(isProcessing) return;
+
+  isProcessing = true;
+  document.body.classList.add('processing');
+
   pendingCompletes.add(item.itemId);
 
   lastSnapshot.items = lastSnapshot.items.filter(x=>x.itemId!==item.itemId);
@@ -1113,6 +1181,8 @@ async function complete(item){
   const res = await apiPost('toggle', { itemId:item.itemId, done:true });
 
   pendingCompletes.delete(item.itemId);
+  isProcessing = false;
+  document.body.classList.remove('processing');
 
   if(!(res && res.ok)){
     lastSnapshot.items.unshift(item); render();
@@ -1126,17 +1196,23 @@ async function complete(item){
 // ============================================================
 
 async function undo(){
-  if(undoStack.length===0) return;
+  if(undoStack.length===0 || isProcessing) return;
+
+  const undoBtn = document.getElementById('undoBtn');
+  startLoading(undoBtn);
+
   const last = undoStack.pop(); setUndoEnabled();
 
   if(last.type==='toggle'){
     const res = await apiPost('toggle', { itemId:last.item.itemId, done:false });
+    stopLoading(undoBtn);
     if(res && res.ok){ await load(); toast('元に戻しました'); }
     else { undoStack.push(last); setUndoEnabled(); toast('元に戻せませんでした'); }
   }
 
   if(last.type==='add'){
     const res = await apiPost('delete', { itemId:last.item.itemId });
+    stopLoading(undoBtn);
     if(res && res.ok){ await load(); toast('削除しました'); }
     else { undoStack.push(last); setUndoEnabled(); toast('削除できませんでした'); }
   }
@@ -1174,8 +1250,8 @@ function toggleArchive(){
             </div>
             <div class="date">${dateText}</div>
           </div>
-          <button class="btn" style="font-size:12px;padding:6px 12px;" onclick="restoreItem('${item.itemId}')" aria-label="${escapeHtml(item.name)}を復元">戻す</button>
-          <button class="btn" style="font-size:12px;padding:6px 12px;color:#ef4444;" onclick="deleteArchivedItem('${item.itemId}')" aria-label="${escapeHtml(item.name)}を削除">削除</button>
+          <button class="btn" style="font-size:12px;padding:6px 12px;" onclick="restoreItem('${item.itemId}', event)" aria-label="${escapeHtml(item.name)}を復元">戻す</button>
+          <button class="btn" style="font-size:12px;padding:6px 12px;color:#ef4444;" onclick="deleteArchivedItem('${item.itemId}', event)" aria-label="${escapeHtml(item.name)}を削除">削除</button>
         </div>`;
       });
     }
@@ -1188,8 +1264,16 @@ function toggleArchive(){
 function showArchive(){ toggleArchive(); }
 function hideArchive(){ toggleArchive(); }
 
-async function restoreItem(itemId){
+async function restoreItem(itemId, event){
+  if(isProcessing) return;
+
+  const btn = event.target;
+  startLoading(btn);
+
   const res = await apiPost('toggle', { itemId, done:false });
+
+  stopLoading(btn);
+
   if(res && res.ok){
     await load();
     toast('元に戻しました');
@@ -1198,8 +1282,16 @@ async function restoreItem(itemId){
   }
 }
 
-async function deleteArchivedItem(itemId){
+async function deleteArchivedItem(itemId, event){
+  if(isProcessing) return;
+
+  const btn = event.target;
+  startLoading(btn);
+
   const res = await apiPost('delete', { itemId });
+
+  stopLoading(btn);
+
   if(res && res.ok){
     await load();
     toast('削除しました');
